@@ -363,8 +363,9 @@ int main(void) {
         LED_PIN = 1;
 
         // AN0の電圧からタイマーの時間を取得
-        uint8_t work1 = adc_go();
+        work1 = adc_go();
         uint16_t timer_seconds = 299U;
+        work2 = 5U;
         if (work1 <= 0x33U) {
             timer_seconds = 59U;
             work2 = 1U;
@@ -393,7 +394,7 @@ int main(void) {
         }
 
         // タイマー処理呼び出し
-        work2 = timer_main(timer_seconds);
+        work1 = timer_main(timer_seconds);
 
         // ボタンが離されるまで待つ
         wait_button(1);
