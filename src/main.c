@@ -152,91 +152,6 @@ static void flush_led(uint16_t loop) {
     }
 }
 
-/* 時間設定はADCで設定から取得するように変更
-static void setting() {
-    uint8_t loop = 0;
-    uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
-
-    // ボタンが離されるまでループ
-    wait_button(1);
-
-    uint8_t flush_control = 0;
-
-    while (true) {
-
-        if (flush_control == 0) {
-            //flush_control = ((timer_minutes + 1U) * 2U);
-            flush_control = (uint8_t) ((timer_minutes + 1U) << 1U);
-        }
-
-        // LED点滅制御
-        if (flush_control <= 2U) {
-            LED_PIN = 0;
-        } else {
-            LED_PIN = flush_control & 0x01U;
-        }
-        flush_control--;
-
-        // 0.5secのループ
-        loop = 125U;
-        TMR0 = 0;
-        while (loop--) {
-            while (TMR0 < 125) {
-                if (SW_PIN == 0) {
-                    button--;
-                    if (button == 0) goto loop_break;
-                } else {
-                    button = BUTTON_PRESS_DETECTION_CYCLE;
-                }
-            }
-            TMR0 = 0;
-        }
-
-loop_break:
-
-        if (button == 0) {
-            // ボタンが押されたときの処理
-
-            // LED消灯
-            LED_PIN = 0;
-
-            // ボタンが放されるまでwait
-            button = BUTTON_PRESS_DETECTION_CYCLE;
-            uint8_t timer_loop = 0;
-            TMR0 = 0;
-            while (button > 0) {
-
-                if (SW_PIN == 1) {
-                    button--;
-                } else {
-                    button = BUTTON_PRESS_DETECTION_CYCLE;
-                }
-
-                if (TMR0 >= 250) {
-                    TMR0 = 0;
-                    if (timer_loop < 0xFFU) {
-                        timer_loop++;
-                    }
-                }
-            }
-
-            // 125 = 1sec 
-            if (timer_loop < 125U) {
-                // 1秒未満なら時間を＋1分する。5分の次は1分に戻る
-                if (timer_minutes == 5U) {
-                    timer_minutes = 0;
-                }
-                timer_minutes++;
-                flush_control = 0;
-            } else {
-                // 1秒以上なら設定モードを終了する
-                return;
-            }
-        }
-    }
-}
- */
-
 /*
  *  指定時間タイマー動作する
  *  途中キャンセルされた場合は true。タイマー完了の場合は false
@@ -252,29 +167,6 @@ static uint8_t timer_main(uint16_t sec) {
     }
     return 0;
 }
-
-/*
- * ADCの結果からタイマーの時間を返却する
- * 0%-20%  : 1分
- * 20%-40% : 2分
- * 40%-60% : 3分
- * 60%-80% : 4分
- * 80%-100%: 5分
- */
-/*
-static uint8_t get_timer_minutes(uint8_t adres) {
-    if (adres <= 0x33U) {
-        return 1U;
-    } else if (adres <= 0x66U) {
-        return 2U;
-    } else if (adres <= 0x99U) {
-        return 3U;
-    } else if (adres <= 0xCCU) {
-        return 4U;
-    }
-    return 5U;
-}
- */
 
 /*
  * 65280 / x 簡易計算
@@ -310,11 +202,14 @@ static void play(uint8_t key) {
     if (is_music_stop) return;
 
     uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
+
     // 0.5秒間音を鳴らす場合のループ数を算出する
     uint16_t loop = play_get_loop_count(key);
+
     while (loop--) {
         if (key != 255 && key != 128 && key != 64) {
-            BUZZER_PIN = loop & 0x01U;
+            BUZZER_PIN = (uint8_t)loop & 0x01U;
+            LED_PIN = 1;
         }
         // 半周期分ループ
         TMR0 = 0;
@@ -332,6 +227,7 @@ static void play(uint8_t key) {
     }
 play_exit:
     BUZZER_PIN = 0;
+    LED_PIN = 0;
 }
 
 /*
@@ -749,7 +645,6 @@ int main(void) {
             play(30); // C7
             play(255); // 休符
             play(30); // C7
-            play(255); // 休符
 
 #endif
             // プリスケーラを 1:64 に変更
