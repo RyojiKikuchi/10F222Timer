@@ -194,8 +194,7 @@ static uint16_t play_get_loop_count(uint8_t x) {
  * 音楽再生 
  * 音の長さは大体0.5秒 (T=120想定)
  * 
- * 休符は wait_second() で0.25秒のWaitを入れる。
- * if (!is_music_stop) is_music_stop = wait_second();
+ * 255,128,64 で音符の1/1,1/2,1/4の休符とする。
  */
 static void play(uint8_t key) {
 
@@ -209,6 +208,8 @@ static void play(uint8_t key) {
     while (loop--) {
         if (key != 255 && key != 128 && key != 64) {
             BUZZER_PIN = (uint8_t)loop & 0x01U;
+            // 音符の場合はLEDを点灯
+            // 本当は外で判定したいが、メモリ不足のためここで設定する
             LED_PIN = 1;
         }
         // 半周期分ループ
