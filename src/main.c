@@ -11,6 +11,7 @@
 
 #include <xc.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 /* ============================================================
  *  Configuration bits
