@@ -9,6 +9,10 @@
  * 
  */
 
+/* ============================================================
+ *  Include
+ * ============================================================ */
+
 #include <xc.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -63,12 +67,12 @@
  * ============================================================ */
 
 //#define PLAY_TEST
-//#define SHIKI_HARU
 //#define SEIJA
-//#define TENGOKU
 //#define MINUET
 //#define ORG_CRYSTAL_BREEZE
 #define RAMEN
+//#define COPILOT_ORIGINAL
+//#define GOOGLE_ORIGINAL
 
 /* ============================================================
  *  Global
@@ -216,7 +220,7 @@ static uint8_t timer_main(uint16_t sec) {
 /*
  * 音楽再生 
  * 音の長さは大体0.5秒 (T=120想定)
- * 
+ * プリスケーラを 1:16 に設定しておく
  * 255,128,64 で音符の1/1,1/2,1/4の休符とする。
  */
 static void play(uint8_t key) {
@@ -224,13 +228,10 @@ static void play(uint8_t key) {
     // キャンセル済み判定
     if (is_music_stop) return;
 
-    uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
-
     // 0.5秒間音を鳴らす場合のループ数を算出する
     // 65280 / x 簡易計算
     // 割り算を行うとプログラム容量が増えるので引き算でザックリ算出する
-    //uint16_t loop = play_get_loop_count(key);
-
+    // 仕組み上音の長さが結構バラバラになる
     uint8_t res = 0;
     uint8_t rem = 255U; // 65280 >> 8 で8bit演算にする
 
@@ -239,6 +240,7 @@ static void play(uint8_t key) {
         rem -= key;
         res++;
     }
+
     // << 8 して元に戻す
     uint16_t loop = (uint16_t) res << 8;
     uint8_t note = 1;
@@ -261,6 +263,9 @@ static void play(uint8_t key) {
             break;
     }
 
+    uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
+
+    // BUZZEのPINを指定の周波数でON/OFFさせて音階を出力する
     while (loop--) {
 
         if (note) {
@@ -293,383 +298,408 @@ play_exit:
 static void play_music() {
 
 #ifdef PLAY_TEST
-        play(60); // C6
-        play(60); // C6
-        play(255); // 休符(音と同じ長さ)
-        play(53); // D6
-        play(53); // D6
-        play(128); // 休符(音の半分の長さ)
-        play(47); // E6
-        play(47); // E6
-        play(64); // 休符(音の四分の一の長さ)
-        play(45); // F6
-        play(45); // F6
-        play(255); // 休符(音と同じ長さ)
-        play(255); // 休符(音と同じ長さ)
-        play(255); // 休符(音と同じ長さ)
-        play(60); // C6
-        play(60); // C6
-        play(255); // 休符(音と同じ長さ)
-        play(53); // D6
-        play(53); // D6
-        play(128); // 休符(音の半分の長さ)
-        play(47); // E6
-        play(47); // E6
-        play(64); // 休符(音の四分の一の長さ)
-        play(45); // F6
-        play(45); // F6
-
-#endif
-
-#ifdef SHIKI_HARU
-        // ヴィヴァルディ「春」冒頭（音の長さ一定・最大62音）
-        play(95); // E5
-        play(84); // F#5
-        play(75); // G#5
-        play(128); // (休符)
-        play(95); // E5
-        play(84); // F#5
-        play(75); // G#5
-        play(128); // (休符)
-        play(75); // G#5
-        play(80); // G5
-        play(75); // G#5
-        play(71); // A5
-        play(63); // B5
-        play(128); // (休符)
-        play(63); // B5
-        play(128); // (休符)
-        play(63); // B5
-        play(71); // A5
-        play(75); // G#5
-        play(128); // (休符)
-        play(75); // G#5
-        play(80); // G5
-        play(75); // G#5
-        play(71); // A5
-        play(63); // B5
-        play(128); // (休符)
-        play(63); // B5
-        play(128); // (休符)
-        play(63); // B5
-        play(71); // A5
-        play(75); // G#5
-        play(84); // F#5
-        play(95); // E5
-        play(128); // (休符)
-        play(84); // F#5
-        play(128); // (休符)
-        play(95); // E5
-        // 合計37音（残り25音の空きあり）
+    play(60); // C6
+    play(60); // C6
+    play(255); // 休符(音と同じ長さ)
+    play(53); // D6
+    play(53); // D6
+    play(128); // 休符(音の半分の長さ)
+    play(47); // E6
+    play(47); // E6
+    play(64); // 休符(音の四分の一の長さ)
+    play(45); // F6
+    play(45); // F6
+    play(255); // 休符(音と同じ長さ)
+    play(255); // 休符(音と同じ長さ)
+    play(255); // 休符(音と同じ長さ)
+    play(60); // C6
+    play(60); // C6
+    play(255); // 休符(音と同じ長さ)
+    play(53); // D6
+    play(53); // D6
+    play(128); // 休符(音の半分の長さ)
+    play(47); // E6
+    play(47); // E6
+    play(64); // 休符(音の四分の一の長さ)
+    play(45); // F6
+    play(45); // F6
 
 #endif
 
 #ifdef SEIJA
-        // 聖者の行進（ロングVer. 52音構成）
+    // 聖者の行進（ロングVer. 52音構成）
 
-        // --- メロディ 1回目 ---
-        play(119); // C5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(89); // F5
-        play(128); // 休符(1/2)
-        play(80); // G5
-        play(255); // 休符(1)
+    // --- メロディ 1回目 ---
+    play(119); // C5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(89); // F5
+    play(128); // 休符(1/2)
+    play(80); // G5
+    play(255); // 休符(1)
 
-        // --- メロディ 2回目 ---
-        play(119); // C5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(89); // F5
-        play(128); // 休符(1/2)
-        play(80); // G5
-        play(255); // 休符(1)
+    // --- メロディ 2回目 ---
+    play(119); // C5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(89); // F5
+    play(128); // 休符(1/2)
+    play(80); // G5
+    play(255); // 休符(1)
 
-        // --- メロディ 3回目（展開部） ---
-        play(119); // C5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(89); // F5
-        play(128); // 休符(1/2)
-        play(80); // G5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(119); // C5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(106); // D5
-        play(255); // 休符(1)
+    // --- メロディ 3回目（展開部） ---
+    play(119); // C5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(89); // F5
+    play(128); // 休符(1/2)
+    play(80); // G5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(119); // C5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(106); // D5
+    play(255); // 休符(1)
 
-        // --- 後半サビ（Oh, when the saints...） ---
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(106); // D5
-        play(128); // 休符(1/2)
-        play(119); // C5
-        play(255); // 休符(1)
-        play(119); // C5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(80); // G5
-        play(128); // 休符(1/2)
-        play(80); // G5
-        play(128); // 休符(1/2)
-        play(89); // F5
-        play(255); // 休符(1)
+    // --- 後半サビ（Oh, when the saints...） ---
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(106); // D5
+    play(128); // 休符(1/2)
+    play(119); // C5
+    play(255); // 休符(1)
+    play(119); // C5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(80); // G5
+    play(128); // 休符(1/2)
+    play(80); // G5
+    play(128); // 休符(1/2)
+    play(89); // F5
+    play(255); // 休符(1)
 
-        // --- 締め ---
-        play(89); // F5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(106); // D5
-        play(128); // 休符(1/2)
-        play(119); // C5
+    // --- 締め ---
+    play(89); // F5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(106); // D5
+    play(128); // 休符(1/2)
+    play(119); // C5
 
-        play(89); // F5
-        play(128); // 休符(1/2)
-        play(95); // E5
-        play(128); // 休符(1/2)
-        play(95); // E5
-#endif
-
-#ifdef TENGOKU
-
-        // 天国と地獄（地獄のギャロップ）
-        // 合計 48音
-        play(159); // G4
-        play(127); // B4
-        play(106); // D5
-        play(80); // G5
-        play(80); // G5
-        play(255); // 休符
-        play(80); // G5
-        play(255); // 休符
-
-        play(71); // A5
-        play(80); // G5
-        play(84); // F#5
-        play(80); // G5
-        play(71); // A5
-        play(255); // 休符
-        play(71); // A5
-        play(255); // 休符
-
-        play(80); // G5
-        play(84); // F#5
-        play(89); // F5
-        play(84); // F#5
-        play(80); // G5
-        play(255); // 休符
-        play(80); // G5
-        play(255); // 休符
-
-        play(71); // A5
-        play(63); // B5
-        play(60); // C6
-        play(53); // D6
-        play(47); // E6
-        play(45); // F6
-        play(42); // F#6
-        play(40); // G6
-
-        play(40); // G6
-        play(255); // 休符
-        play(40); // G6
-        play(255); // 休符
-        play(40); // G6
-        play(255); // 休符
-        play(40); // G6
-        play(255); // 休符
-
-        play(40); // G6
-        play(47); // E6
-        play(53); // D6
-        play(60); // C6
-        play(71); // A5
-        play(80); // G5
-        play(89); // F5
-        play(106); // D5
-
+    play(89); // F5
+    play(128); // 休符(1/2)
+    play(95); // E5
+    play(128); // 休符(1/2)
+    play(95); // E5
 #endif
 
 #ifdef MINUET
 
-        // メヌエット（ト長調）
-        // 合計 32音
+    // メヌエット（ト長調）
+    // 合計 32音
 
-        play(80); // G5
-        play(106); // D5
-        play(95); // E5
-        play(84); // F#5
-        play(80); // G5
-        play(106); // D5
-        play(106); // D5
-        play(106); // D5
+    play(80); // G5
+    play(106); // D5
+    play(95); // E5
+    play(84); // F#5
+    play(80); // G5
+    play(106); // D5
+    play(106); // D5
+    play(106); // D5
 
-        play(71); // A5
-        play(106); // D5
-        play(95); // E5
-        play(84); // F#5
-        play(80); // G5
-        play(106); // D5
-        play(106); // D5
-        play(106); // D5
+    play(71); // A5
+    play(106); // D5
+    play(95); // E5
+    play(84); // F#5
+    play(80); // G5
+    play(106); // D5
+    play(106); // D5
+    play(106); // D5
 
-        play(80); // G5
-        play(89); // F5
-        play(95); // E5
-        play(106); // D5
-        play(119); // C5
-        play(127); // B4
-        play(142); // A4
-        play(159); // G4
+    play(80); // G5
+    play(89); // F5
+    play(95); // E5
+    play(106); // D5
+    play(119); // C5
+    play(127); // B4
+    play(142); // A4
+    play(159); // G4
 
-        play(84); // F#5
-        play(80); // G5
-        play(71); // A5
-        play(106); // D5
-        play(127); // B4
-        play(142); // A4
-        play(159); // G4
-        play(159); // G4
+    play(84); // F#5
+    play(80); // G5
+    play(71); // A5
+    play(106); // D5
+    play(127); // B4
+    play(142); // A4
+    play(159); // G4
+    play(159); // G4
 
 #endif
 
 #ifdef ORG_CRYSTAL_BREEZE
-        // オリジナル曲：Crystal Breeze
-        // 合計 32音
+    // オリジナル曲：Crystal Breeze
+    // 合計 32音
 
-        play(60); // C6
-        play(80); // G5
-        play(95); // E5
-        play(106); // D5
-        play(119); // C5
-        play(255); // 休符
-        play(119); // C5
-        play(106); // D5
+    play(60); // C6
+    play(80); // G5
+    play(95); // E5
+    play(106); // D5
+    play(119); // C5
+    play(255); // 休符
+    play(119); // C5
+    play(106); // D5
 
-        play(95); // E5
-        play(80); // G5
-        play(71); // A5
-        play(63); // B5
-        play(60); // C6
-        play(255); // 休符
-        play(60); // C6
-        play(255); // 休符
+    play(95); // E5
+    play(80); // G5
+    play(71); // A5
+    play(63); // B5
+    play(60); // C6
+    play(255); // 休符
+    play(60); // C6
+    play(255); // 休符
 
-        play(53); // D6
-        play(60); // C6
-        play(63); // B5
-        play(71); // A5
-        play(80); // G5
-        play(255); // 休符
-        play(95); // E5
-        play(106); // D5
+    play(53); // D6
+    play(60); // C6
+    play(63); // B5
+    play(71); // A5
+    play(80); // G5
+    play(255); // 休符
+    play(95); // E5
+    play(106); // D5
 
-        play(119); // C5
-        play(142); // A4
-        play(159); // G4
-        play(142); // A4
-        play(119); // C5
-        play(255); // 休符
-        play(119); // C5
-        play(255); // 休符
+    play(119); // C5
+    play(142); // A4
+    play(159); // G4
+    play(142); // A4
+    play(119); // C5
+    play(255); // 休符
+    play(119); // C5
+    play(255); // 休符
 
 #endif
 
 #ifdef RAMEN
 
-        // ラーメン完成！歓喜のチャルメラ
-        // 合計 60音
+    // ラーメン完成！歓喜のチャルメラ
+    // 合計 60音
 
-        // --- 導入：チャルメラ・オマージュ ---
-        play(142); // A4
-        play(127); // B4
-        play(113); // C#5 (少し外したチャルメラ風)
-        play(127); // B4
-        play(142); // A4
-        play(255); // 休符
-        play(142); // A4
-        play(127); // B4
-        play(113); // C#5
-        play(127); // B4
-        play(142); // A4
-        play(127); // B4
-        play(255); // 休符
+    // --- 導入：チャルメラ・オマージュ ---
+    play(142); // A4
+    play(127); // B4
+    play(113); // C#5 (少し外したチャルメラ風)
+    play(127); // B4
+    play(142); // A4
+    play(255); // 休符
+    play(142); // A4
+    play(127); // B4
+    play(113); // C#5
+    play(127); // B4
+    play(142); // A4
+    play(127); // B4
+    play(255); // 休符
 
-        // --- 期待感：音階が上がっていく ---
-        play(119); // C5
-        play(106); // D5
-        play(95); // E5
-        play(80); // G5
-        play(119); // C5
-        play(106); // D5
-        play(95); // E5
-        play(80); // G5
+    // --- 期待感：音階が上がっていく ---
+    play(119); // C5
+    play(106); // D5
+    play(95); // E5
+    play(80); // G5
+    play(119); // C5
+    play(106); // D5
+    play(95); // E5
+    play(80); // G5
 
-        // --- メイン：喜びのメロディ（歓喜の歌風） ---
-        play(95); // E5
-        play(95); // E5
-        play(89); // F5
-        play(80); // G5
-        play(80); // G5
-        play(89); // F5
-        play(95); // E5
-        play(106); // D5
-        play(119); // C5
-        play(119); // C5
-        play(106); // D5
-        play(95); // E5
-        play(95); // E5
-        play(128); // 休符(短)
-        play(106); // D5
-        play(106); // D5
-        play(255); // 休符
+    // --- メイン：喜びのメロディ（歓喜の歌風） ---
+    play(95); // E5
+    play(95); // E5
+    play(89); // F5
+    play(80); // G5
+    play(80); // G5
+    play(89); // F5
+    play(95); // E5
+    play(106); // D5
+    play(119); // C5
+    play(119); // C5
+    play(106); // D5
+    play(95); // E5
+    play(95); // E5
+    play(128); // 休符(短)
+    play(106); // D5
+    play(106); // D5
+    play(255); // 休符
 
-        play(95); // E5
-        play(95); // E5
-        play(89); // F5
-        play(80); // G5
-        play(80); // G5
-        play(89); // F5
-        play(95); // E5
-        play(106); // D5
-        play(119); // C5
-        play(119); // C5
-        play(106); // D5
-        play(95); // E5
-        play(106); // D5
-        play(128); // 休符(短)
-        play(119); // C5
-        play(119); // C5
-        play(255); // 休符
+    play(95); // E5
+    play(95); // E5
+    play(89); // F5
+    play(80); // G5
+    play(80); // G5
+    play(89); // F5
+    play(95); // E5
+    play(106); // D5
+    play(119); // C5
+    play(119); // C5
+    play(106); // D5
+    play(95); // E5
+    play(106); // D5
+    play(128); // 休符(短)
+    play(119); // C5
+    play(119); // C5
+    play(255); // 休符
 
-        // --- フィナーレ：高らかに終了 ---
-        play(80); // G5
-        play(60); // C6
-        play(47); // E6
-        play(40); // G6
-        play(30); // C7
-        play(255); // 休符
-        play(30); // C7
-        play(255); // 休符
-        play(30); // C7
-        play(30); // C7
+    // --- フィナーレ：高らかに終了 ---
+    play(80); // G5
+    play(60); // C6
+    play(47); // E6
+    play(40); // G6
+    play(30); // C7
+    play(255); // 休符
+    play(30); // C7
+    play(255); // 休符
+    play(30); // C7
+    play(30); // C7
 
 #endif
 
-    
-}
+#ifdef COPILOT_ORIGINAL
 
+    play(255); // 休符
+    play(119); // C5
+    play(95); // E5
+    play(80); // G5
+    play(60); // C6
+    play(128); // 休符(半分)
+    play(63); // B5
+    play(71); // A5
+    play(80); // G5
+    play(64); // 休符(1/4)
+    play(95); // E5
+    play(106); // D5
+    play(119); // C5
+    play(128); // 休符(半分)
+    play(159); // G4
+    play(127); // B4
+    play(119); // C5
+    play(255); // 休符
+    play(119); // C5
+    play(134); // A#4
+    play(142); // A4
+    play(150); // G#4
+    play(159); // G4
+    play(128); // 休符(半分)
+    play(95); // E5
+    play(106); // D5
+    play(119); // C5
+    play(64); // 休符(1/4)
+    play(119); // C5
+    play(150); // G#4
+    play(159); // G4
+    play(127); // B4
+    play(128); // 休符(半分)
+    play(119); // C5
+    play(95); // E5
+    play(80); // G5
+    play(60); // C6
+    play(255); // 休符
+    play(63); // B5
+    play(71); // A5
+    play(80); // G5
+    play(128); // 休符(半分)
+    play(95); // E5
+    play(106); // D5
+    play(119); // C5
+    play(64); // 休符(1/4)
+    play(142); // A4
+    play(150); // G#4
+    play(159); // G4
+    play(169); // F#4
+    play(179); // F4
+    play(128); // 休符(半分)
+    play(119); // C5
+    play(95); // E5
+    play(60); // C6
+    play(30); // C7
+    play(15); // C8  フィナーレ（高音で締め）
+
+#endif
+
+#ifdef GOOGLE_ORIGINAL
+    // タイマー完了メロディー (56音)
+    play(119); // C5
+    play(95); // E5
+    play(80); // G5
+    play(60); // C6
+    play(128); // 休符(1/2)
+    play(60); // C6
+    play(128); // 休符(1/2)
+
+    play(119); // C5
+    play(95); // E5
+    play(80); // G5
+    play(60); // C6
+    play(128); // 休符(1/2)
+    play(60); // C6
+    play(255); // 休符(1/1)
+
+    play(106); // D5
+    play(89); // F5
+    play(71); // A5
+    play(53); // D6
+    play(128); // 休符(1/2)
+    play(53); // D6
+    play(128); // 休符(1/2)
+
+    play(106); // D5
+    play(89); // F5
+    play(71); // A5
+    play(53); // D6
+    play(128); // 休符(1/2)
+    play(53); // D6
+    play(255); // 休符(1/1)
+
+    play(95); // E5
+    play(80); // G5
+    play(60); // C6
+    play(47); // E6
+    play(128); // 休符(1/2)
+    play(47); // E6
+    play(128); // 休符(1/2)
+
+    play(89); // F5
+    play(71); // A5
+    play(53); // D6
+    play(45); // F6
+    play(128); // 休符(1/2)
+    play(45); // F6
+    play(128); // 休符(1/2)
+
+    play(80); // G5
+    play(60); // C6
+    play(47); // E6
+    play(40); // G6
+    play(128); // 休符(1/2)
+    play(40); // G6
+    play(128); // 休符(1/2)
+
+    play(60); // C6
+    play(47); // E6
+    play(40); // G6
+    play(30); // C7
+    play(128); // 休符(1/2)
+    play(30); // C7
+    play(255); // 休符(1/1)
+
+#endif  
+
+}
 
 /*
  * main
@@ -685,12 +715,12 @@ int main(void) {
     // 初期化
     system_init();
 
+    // スリープ解除ではない場合スリープする
     if (!STATUSbits.GPWUF) {
         goto go_sleep;
     }
 
-    // チャタリング防止期間ボタンが押されたままならタイマー実行
-    // ボタンが離れたら再度スリープする
+    // チャタリング判定期間にボタンが離されたら再度スリープする
     for (uint8_t i = 0; i < BUTTON_PRESS_DETECTION_CYCLE; i++) {
         if (SW_PIN == 1) {
             goto go_sleep;
@@ -737,22 +767,19 @@ int main(void) {
 
         // ボタンが離されるまで待つ
         wait_button(1);
-        // LEDを3秒間点滅させる
-        flush_led(60U);
+        // LEDを2秒間点滅させる
+        flush_led(40U);
 
 
     } else {
-        // タイマー完了した場合
-
-        is_music_stop = 0;
-
-        // プリスケーラを 1:16 に変更
-        OPTION = 0b00000011;
-
-        // 音楽再生
-        play_music();
 
     }
+
+    // プリスケーラを 1:16 に変更
+    OPTION = 0b00000011;
+
+    // 音楽再生
+    play_music();
 
 go_sleep:
 
@@ -762,7 +789,8 @@ go_sleep:
     // スリープ
     SLEEP();
 
-    // 警告が出るのでreturnしておく
+    // returnがないと警告が出るのでreturn記載しておく
+    // warning: non-void function does not return a value [-Wreturn-type]
     return EXIT_SUCCESS;
 
 }
