@@ -101,7 +101,7 @@ static void system_init() {
     /* 
      * ADCON0
      *     7:ANS1    = 0   AN1/GP1をデジタルI/Oとして利用
-     *     6:ANS0    = 1   AN0/GP0をデジタルI/Oとして利用
+     *     6:ANS0    = 1   AN0/GP0をアナログ入力として利用
      *   5-4:        = 00  reserved
      *   3-2:CHS     = 00  ADCチャンネル選択 AN0
      *     1:GO/DONE = 0
@@ -246,10 +246,15 @@ static void play(uint8_t key) {
     // 休符の場合は長さ毎にシフト量を変更して1/1,1/2,1/4にする。
     switch (key) {
         case 64U:
+            // 1/4休符とするため2bitシフト
+            // 128Uと255Uの処理も行うのでbreakしない
             loop >>= 1;
         case 128U:
+            // 1/2休符とするため1bitシフト
+            // 255Uの処理も行うのでbreakしない
             loop >>= 1;
         case 255U:
+            // 休符のフラグとLED消灯
             note = 0;
             LED_PIN = 0;
             break;
