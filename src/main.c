@@ -31,9 +31,13 @@
 /* ============================================================
  *  Clock Speed
  * ============================================================ */
-
 /* Clock 8MHz */
 #define _XTAL_FREQ  8000000UL
+
+// 本来は250だが、大きくずれる場合は調整する
+// 数字を減らすと時間が短くなる、増やすと長くなる。
+// 基本的には命令実行の分時間が伸びるので、値を減らして短くする方向に調整するハズ
+#define TMR_8MS_LOOP_COUNT  250U
 
 /* ============================================================
  *  Version
@@ -49,11 +53,6 @@
 /* ボタンのチャタリング防止のため、ボタン押下判定するサイクル数 */
 #define BUTTON_PRESS_DETECTION_CYCLE    20U /* 1cycle = 0.5u * 20 = 10usec */
 
-// 本来は250だが、大きくずれる場合は調整する
-// 数字を減らすと時間が短くなる、増やすと長くなる。
-// 基本的には命令実行の分時間が伸びるので、値を減らして短くする方向に調整するハズ
-#define TMR_8MS_LOOP_COUNT  250U
-
 /* ============================================================
  *  Pin Define
  * ============================================================ */
@@ -63,16 +62,28 @@
 #define SW_PIN          GPIObits.GP3
 
 /* ============================================================
- *  Music Select
+ *  Music Play
  * ============================================================ */
 
+// T=120で250
+// 数字を小さくするとその分テンポが早くなる
+// 遅くすることは出来ない
+//#define TMR_MUSIC_QUARTER       250U    // T=120
+#define TMR_MUSIC_QUARTER       218U    // T=150
+//#define TMR_MUSIC_QUARTER       187U    // T=180
+//#define TMR_MUSIC_QUARTER       156U    // T=210
+//#define TMR_MUSIC_QUARTER       125U    // T=240
+#define TMR_MUSIC_EIGHTH        (TMR_MUSIC_QUARTER / 2U)
+#define TMR_MUSIC_SIXTEENTH     (TMR_MUSIC_QUARTER / 4U)
+
+//#define PLAY_NONE
 //#define PLAY_TEST
-//#define SEIJA
-//#define MINUET
-//#define ORG_CRYSTAL_BREEZE
-#define RAMEN
-//#define COPILOT_ORIGINAL
-//#define GOOGLE_ORIGINAL
+//#define SEIJA                 // 聖者の行進(T=150)
+#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
+//#define ORG_CRYSTAL_BREEZE    // Crystal Breeze(T=120)
+//#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
+//#define COPILOT_ORIGINAL      // Copilot Original(T=120)
+//#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
 
 /* ============================================================
  *  Global
@@ -80,6 +91,7 @@
 
 // 音楽再生を停止するためのフラグ
 static uint8_t is_music_stop = 0;
+static uint8_t play_length = TMR_MUSIC_QUARTER;
 
 /* ============================================================
  *  システム初期化
@@ -219,63 +231,50 @@ static uint8_t timer_main(uint16_t sec) {
 
 /*
  * 音楽再生 
- * 音の長さは大体0.5秒 (T=120想定)
- * プリスケーラを 1:16 に設定しておく
- * 255,128,64 で音符の1/1,1/2,1/4の休符とする。
- */
+ * key で半周期分となるTMR0のカウント値を指定(1:16プリスケーラ(8us)を何回繰り返すか)
+ * そのまま呼び出せば 4分音符 の長さで発音
+ * 
+ *  音符の長さは play_length に以下を設定。
+ *     TMR_MUSIC_QUARTER   4分音符(デフォルト)
+ *     TMR_MUSIC_EIGHTH    8分音符
+ *     TMR_MUSIC_SIXTEENTH 16分音符
+ * 
+ *  keyの最大値は 249 まで。245以上で休符。
+ * 
+ *  */
 static void play(uint8_t key) {
 
-    // キャンセル済み判定
+    //　キャンセル済み判定
     if (is_music_stop) return;
+    int8_t play_note = 1;
 
-    // 0.5秒間音を鳴らす場合のループ数を算出する
-    // 65280 / x 簡易計算
-    // 割り算を行うとプログラム容量が増えるので引き算でザックリ算出する
-    // 仕組み上音の長さが結構バラバラになる
-    uint8_t res = 0;
-    uint8_t rem = 255U; // 65280 >> 8 で8bit演算にする
-
-    // 8bit / 8bit の簡易引き算方式
-    while (rem >= key) {
-        rem -= key;
-        res++;
+    if (key >= 245) {
+        play_note = 0;
+        LED_PIN = 0;
+    } else {
+        LED_PIN = 1;
     }
 
-    // << 8 して元に戻す
-    uint16_t loop = (uint16_t) res << 8;
-    uint8_t note = 1;
-    LED_PIN = 1;
-
-    // 休符の場合は長さ毎にシフト量を変更して1/1,1/2,1/4にする。
-    switch (key) {
-        case 64U:
-            // 1/4休符とするため2bitシフト
-            // 128Uと255Uの処理も行うのでbreakしない
-            loop >>= 1;
-        case 128U:
-            // 1/2休符とするため1bitシフト
-            // 255Uの処理も行うのでbreakしない
-            loop >>= 1;
-        case 255U:
-            // 休符のフラグとLED消灯
-            note = 0;
-            LED_PIN = 0;
-            break;
-    }
-
+    // ループ回数
+    uint8_t loop = play_length;
+    // 半周期計測用
+    uint8_t note_tmr = 0;
+    // 前回タイマー
+    uint8_t prev_tmr = 0;
+    // ボタン押下チェック用
     uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
 
-    // BUZZEのPINを指定の周波数でON/OFFさせて音階を出力する
+    TMR0 = 0;
+
     while (loop--) {
-
-        if (note) {
-            // 半周期毎にブザーをON/OFFする
-            BUZZER_PIN = (uint8_t) loop & 0x01U;
-        }
-
-        // 半周期分ループ
-        TMR0 = 0;
-        while (TMR0 < key) {
+        while (TMR0 < 250) {
+            if (prev_tmr != TMR0) {
+                note_tmr++;
+                if (note_tmr >= key && play_note) {
+                    note_tmr = 0;
+                    BUZZER_PIN = ~BUZZER_PIN;
+                }
+            }
             if (SW_PIN == 0) {
                 button--;
                 if (!button) {
@@ -286,8 +285,11 @@ static void play(uint8_t key) {
             }
             button = BUTTON_PRESS_DETECTION_CYCLE;
         }
+        TMR0 = 0;
     }
+
 play_exit:
+    play_length = TMR_MUSIC_QUARTER;
     BUZZER_PIN = 0;
     LED_PIN = 0;
 }
@@ -297,156 +299,196 @@ play_exit:
  */
 static void play_music() {
 
+    uint8_t i, j;
+
+#ifdef PLAY_NONE
+    play(249); // 休符
+#endif
+
 #ifdef PLAY_TEST
     play(60); // C6
     play(60); // C6
-    play(255); // 休符(音と同じ長さ)
+    play(249); // 休符(1/4)
     play(53); // D6
     play(53); // D6
-    play(128); // 休符(音の半分の長さ)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(1/8)
     play(47); // E6
     play(47); // E6
-    play(64); // 休符(音の四分の一の長さ)
+    play_length = TMR_MUSIC_SIXTEENTH;
+    play(249); // 休符(1/16)
     play(45); // F6
     play(45); // F6
-    play(255); // 休符(音と同じ長さ)
-    play(255); // 休符(音と同じ長さ)
-    play(255); // 休符(音と同じ長さ)
+    play(249); // 休符
+    play(249); // 休符
+    play(249); // 休符
     play(60); // C6
     play(60); // C6
-    play(255); // 休符(音と同じ長さ)
+    play(249); // 休符
     play(53); // D6
     play(53); // D6
-    play(128); // 休符(音の半分の長さ)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(47); // E6
     play(47); // E6
-    play(64); // 休符(音の四分の一の長さ)
+    play_length = TMR_MUSIC_SIXTEENTH;
+    play(249); // 休符(1/8)
     play(45); // F6
     play(45); // F6
 
 #endif
 
 #ifdef SEIJA
-    // 聖者の行進（ロングVer. 52音構成）
 
-    // --- メロディ 1回目 ---
-    play(119); // C5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(89); // F5
-    play(128); // 休符(1/2)
-    play(80); // G5
-    play(255); // 休符(1)
+    // テンポ T=150 推奨
 
-    // --- メロディ 2回目 ---
-    play(119); // C5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(89); // F5
-    play(128); // 休符(1/2)
-    play(80); // G5
-    play(255); // 休符(1)
+    // --- Aメロ：ループで節約 (4分音符主体)
+    // C E F G を3回繰り返す（3回目は後ろに続くので2回ループ＋アルファ）
+    for (i = 0; i < 2; i++) {
+        play(60); // C6
+        play(47); // E6
+        play(45); // F6
+        play(40); // G6
+        play(249); // 休符
+    }
 
-    // --- メロディ 3回目（展開部） ---
-    play(119); // C5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(89); // F5
-    play(128); // 休符(1/2)
-    play(80); // G5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(119); // C5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(106); // D5
-    play(255); // 休符(1)
+    play(60); // C6
+    play(47); // E6
+    play(45); // F6
+    play(40); // G6
+    play(47); // E6
+    play(60); // C6
+    play(47); // E6
+    play(53); // D6
+    play(249); // 休符
 
-    // --- 後半サビ（Oh, when the saints...） ---
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(106); // D5
-    play(128); // 休符(1/2)
-    play(119); // C5
-    play(255); // 休符(1)
-    play(119); // C5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(80); // G5
-    play(128); // 休符(1/2)
-    play(80); // G5
-    play(128); // 休符(1/2)
-    play(89); // F5
-    play(255); // 休符(1)
+    // --- Bメロ：サビ
+    play(47); // E6
+    play(53); // D6
+    play(60); // C6
+    play(60); // C6
+    play(47); // E6
+    play(40); // G6
+    play(40); // G6
+    play(45); // F6
+    play(249); // 休符
 
-    // --- 締め ---
-    play(89); // F5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(106); // D5
-    play(128); // 休符(1/2)
-    play(119); // C5
+    // --- Cメロ：結び
+    play(47); // E6
+    play(45); // F6
+    play(40); // G6
+    play(47); // E6
+    play(60); // C6
+    play(53); // D6
+    play(60); // C6
 
-    play(89); // F5
-    play(128); // 休符(1/2)
-    play(95); // E5
-    play(128); // 休符(1/2)
-    play(95); // E5
-#endif
+    // --- 2周目：8分音符を混ぜて豪華に (メモリを使い切る)
+    play(249); // 間
+    for (i = 0; i < 2; i++) {
+        play_length = TMR_MUSIC_EIGHTH;
+        play(60);
+        play(60); // C6 C6
+        play(47); // E6
+        play(45); // F6
+        play(40); // G6
+        play(249); // 休符
+    }
 
-#ifdef MINUET
+    // クライマックス：1オクターブ上で連打
+    for (i = 0; i < 4; i++) {
+        play_length = TMR_MUSIC_SIXTEENTH;
+        play(30); // C7
+    }
+    play(24); // E7
+    play(20); // G7
+    play(15); // C8 (フィニッシュ)
 
-    // メヌエット（ト長調）
-    // 合計 32音
+    // --- 追加：豪華フィナーレ（メモリ残り64words活用）
 
-    play(80); // G5
-    play(106); // D5
-    play(95); // E5
-    play(84); // F#5
-    play(80); // G5
-    play(106); // D5
-    play(106); // D5
-    play(106); // D5
+    // 1. 裏打ちのリズムでさらに盛り上げる (約24words)
+    for (i = 0; i < 4; i++) {
+        play_length = TMR_MUSIC_EIGHTH;
+        play(249); // 裏拍を感じさせるための短い休符
+        play_length = TMR_MUSIC_EIGHTH;
+        play(30); // C7
+    }
 
-    play(71); // A5
-    play(106); // D5
-    play(95); // E5
-    play(84); // F#5
-    play(80); // G5
-    play(106); // D5
-    play(106); // D5
-    play(106); // D5
+    // 2. ブルース風の音階駆け上がり (約15words)
+    // 圧電スピーカが最も得意な高音域でスライドさせます
+    play_length = TMR_MUSIC_SIXTEENTH;
+    play(40); // G6
+    play(36); // A6
+    play(34); // A#6
+    play(32); // B6
+    play(30); // C7
 
-    play(80); // G5
-    play(89); // F5
-    play(95); // E5
-    play(106); // D5
-    play(119); // C5
-    play(127); // B4
-    play(142); // A4
-    play(159); // G4
+    // 3. 最後の最後：力強いロングトーンの三連打 (約12words)
+    // 4分音符で堂々と締めます
+    play(24); // E7
+    play(20); // G7
+    play(15); // C8 (最高音！)
 
-    play(84); // F#5
-    play(80); // G5
-    play(71); // A5
-    play(106); // D5
-    play(127); // B4
-    play(142); // A4
-    play(159); // G4
-    play(159); // G4
+    // 4. 残り僅かなメモリで、最後の余韻に16分音符のトリル (約10words)
+    for (i = 0; i < 3; i++) {
+        play_length = TMR_MUSIC_SIXTEENTH;
+        play(15); // C8
+        play_length = TMR_MUSIC_SIXTEENTH;
+        play(18); // A7
+    }
+    play(15); // 本当の終止符 C8
+    // --- 最終調整：15wordsを使い切る「キメ」 (約14words)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(30); // C7 (チャッ)
+    play(30); // C7 (チャッ)
+    play(249); // 休符 (タメ)
+
+    play_length = TMR_MUSIC_QUARTER; // 4分音符に戻る
+    play(15); // C8 (チャーン！)
+    play(249); // 最後の無音
 
 #endif
 
+#ifdef KITCHEN_RUSH
+
+// --- メインループ：アラーム全体を2回繰り返す
+for(j = 0; j < 2; j++) {
+
+    // フレーズ1：軽快な三連符風リズム (1オクターブ上げたC7-G6)
+    for(i = 0; i < 4; i++) {
+        play_length = TMR_MUSIC_EIGHTH;
+        play(30);  // C7
+        play(40);  // G6
+        play(30);  // C7
+        play(249); // 8分休符
+    }
+
+    // フレーズ2：少し音程を上げて急かす (D7-A6)
+    for(i = 0; i < 4; i++) {
+        play_length = TMR_MUSIC_EIGHTH;
+        play(27);  // D7
+        play(36);  // A6
+        play(27);  // D7
+        play(249); // 8分休符
+    }
+
+    // フレーズ3：最高音での警告音 (C8)
+    for(i = 0; i < 8; i++) {
+        play_length = TMR_MUSIC_SIXTEENTH;
+        play(15);  // C8
+        play(249); // 16分休符
+    }
+}
+
+// --- 締め：完了を知らせるチャイム
+play(20);  // G7
+play(24);  // E7
+play(30);  // C7
+play(249); // 終了
+
+#endif
+    
 #ifdef ORG_CRYSTAL_BREEZE
+
     // オリジナル曲：Crystal Breeze
     // 合計 32音
 
@@ -455,7 +497,7 @@ static void play_music() {
     play(95); // E5
     play(106); // D5
     play(119); // C5
-    play(255); // 休符
+    play(249); // 休符
     play(119); // C5
     play(106); // D5
 
@@ -464,16 +506,16 @@ static void play_music() {
     play(71); // A5
     play(63); // B5
     play(60); // C6
-    play(255); // 休符
+    play(249); // 休符
     play(60); // C6
-    play(255); // 休符
+    play(249); // 休符
 
     play(53); // D6
     play(60); // C6
     play(63); // B5
     play(71); // A5
     play(80); // G5
-    play(255); // 休符
+    play(249); // 休符
     play(95); // E5
     play(106); // D5
 
@@ -482,9 +524,9 @@ static void play_music() {
     play(159); // G4
     play(142); // A4
     play(119); // C5
-    play(255); // 休符
+    play(249); // 休符
     play(119); // C5
-    play(255); // 休符
+    play(249); // 休符
 
 #endif
 
@@ -499,14 +541,14 @@ static void play_music() {
     play(113); // C#5 (少し外したチャルメラ風)
     play(127); // B4
     play(142); // A4
-    play(255); // 休符
+    play(249); // 休符
     play(142); // A4
     play(127); // B4
     play(113); // C#5
     play(127); // B4
     play(142); // A4
     play(127); // B4
-    play(255); // 休符
+    play(249); // 休符
 
     // --- 期待感：音階が上がっていく ---
     play(119); // C5
@@ -532,10 +574,11 @@ static void play_music() {
     play(106); // D5
     play(95); // E5
     play(95); // E5
-    play(128); // 休符(短)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(106); // D5
     play(106); // D5
-    play(255); // 休符
+    play(249); // 休符
 
     play(95); // E5
     play(95); // E5
@@ -550,10 +593,11 @@ static void play_music() {
     play(106); // D5
     play(95); // E5
     play(106); // D5
-    play(128); // 休符(短)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(119); // C5
     play(119); // C5
-    play(255); // 休符
+    play(249); // 休符
 
     // --- フィナーレ：高らかに終了 ---
     play(80); // G5
@@ -561,9 +605,9 @@ static void play_music() {
     play(47); // E6
     play(40); // G6
     play(30); // C7
-    play(255); // 休符
+    play(249); // 休符
     play(30); // C7
-    play(255); // 休符
+    play(249); // 休符
     play(30); // C7
     play(30); // C7
 
@@ -571,58 +615,67 @@ static void play_music() {
 
 #ifdef COPILOT_ORIGINAL
 
-    play(255); // 休符
+    play(249); // 休符
     play(119); // C5
     play(95); // E5
     play(80); // G5
     play(60); // C6
-    play(128); // 休符(半分)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(63); // B5
     play(71); // A5
     play(80); // G5
-    play(64); // 休符(1/4)
+    play_length = TMR_MUSIC_SIXTEENTH;
+    play(249); // 休符(1/8)
     play(95); // E5
     play(106); // D5
     play(119); // C5
-    play(128); // 休符(半分)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(159); // G4
     play(127); // B4
     play(119); // C5
-    play(255); // 休符
+    play(249); // 休符
     play(119); // C5
     play(134); // A#4
     play(142); // A4
     play(150); // G#4
     play(159); // G4
-    play(128); // 休符(半分)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(95); // E5
     play(106); // D5
     play(119); // C5
-    play(64); // 休符(1/4)
+    play_length = TMR_MUSIC_SIXTEENTH;
+    play(249); // 休符(1/8)
     play(119); // C5
     play(150); // G#4
     play(159); // G4
     play(127); // B4
-    play(128); // 休符(半分)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(119); // C5
     play(95); // E5
     play(80); // G5
     play(60); // C6
-    play(255); // 休符
+    play(249); // 休符
     play(63); // B5
     play(71); // A5
     play(80); // G5
-    play(128); // 休符(半分)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(95); // E5
     play(106); // D5
     play(119); // C5
-    play(64); // 休符(1/4)
+    play_length = TMR_MUSIC_SIXTEENTH;
+    play(249); // 休符(1/8)
     play(142); // A4
     play(150); // G#4
     play(159); // G4
     play(169); // F#4
     play(179); // F4
-    play(128); // 休符(半分)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(119); // C5
     play(95); // E5
     play(60); // C6
@@ -632,70 +685,84 @@ static void play_music() {
 #endif
 
 #ifdef GOOGLE_ORIGINAL
+
     // タイマー完了メロディー (56音)
     play(119); // C5
     play(95); // E5
     play(80); // G5
     play(60); // C6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(60); // C6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
 
     play(119); // C5
     play(95); // E5
     play(80); // G5
     play(60); // C6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(60); // C6
-    play(255); // 休符(1/1)
+    play(249); // 休符
 
     play(106); // D5
     play(89); // F5
     play(71); // A5
     play(53); // D6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(53); // D6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
 
     play(106); // D5
     play(89); // F5
     play(71); // A5
     play(53); // D6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(53); // D6
-    play(255); // 休符(1/1)
+    play(249); // 休符
 
     play(95); // E5
     play(80); // G5
     play(60); // C6
     play(47); // E6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(47); // E6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
 
     play(89); // F5
     play(71); // A5
     play(53); // D6
     play(45); // F6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(45); // F6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
 
     play(80); // G5
     play(60); // C6
     play(47); // E6
     play(40); // G6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(40); // G6
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
 
     play(60); // C6
     play(47); // E6
     play(40); // G6
     play(30); // C7
-    play(128); // 休符(1/2)
+    play_length = TMR_MUSIC_EIGHTH;
+    play(249); // 休符(短)
     play(30); // C7
-    play(255); // 休符(1/1)
+    play(249); // 休符
 
 #endif  
 
