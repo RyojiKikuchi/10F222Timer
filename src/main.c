@@ -71,17 +71,17 @@
 // 数字を小さくするとその分テンポが早くなる
 // 遅くすることは出来ない
 //#define TMR_MUSIC_QUARTER       250U    // T=120
-//#define TMR_MUSIC_QUARTER       218U    // T=150
+#define TMR_MUSIC_QUARTER       218U    // T=150
 //#define TMR_MUSIC_QUARTER       187U    // T=180
-#define TMR_MUSIC_QUARTER       156U    // T=210
+//#define TMR_MUSIC_QUARTER       156U    // T=210
 //#define TMR_MUSIC_QUARTER       125U    // T=240
 #define TMR_MUSIC_EIGHTH        (TMR_MUSIC_QUARTER / 2U)
 #define TMR_MUSIC_SIXTEENTH     (TMR_MUSIC_QUARTER / 4U)
 
-//#define PLAY_NONE
+#define PLAY_NONE
 //#define PLAY_TEST
 //#define SEIJA                 // 聖者の行進(T=150)
-#define GAMEUP_RUSH            // ゲームアップ・ラッシュ(T=210)
+//#define GAMEUP_RUSH            // ゲームアップ・ラッシュ(T=210)
 //#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
 //#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
@@ -235,11 +235,11 @@ static uint8_t timer_main(uint16_t sec) {
  * 音楽再生 
  * key で半周期分となるTMR0のカウント値を指定(1:16プリスケーラ(8us)を何回繰り返すか)
  * そのまま呼び出せば 4分音符 の長さで発音
- * 
- *  音符の長さは play_length に以下を設定。
+ * 4分音符以外の場合は音符の長さは play_length に以下を設定。
  *     TMR_MUSIC_QUARTER   4分音符(デフォルト)
  *     TMR_MUSIC_EIGHTH    8分音符
  *     TMR_MUSIC_SIXTEENTH 16分音符
+ *  play_length はplay()内で4分音符に初期化
  * 
  *  keyの最大値は 249 まで。245以上で休符。
  * 
@@ -830,6 +830,8 @@ int main(void) {
 
     // AN0の電圧からタイマーの時間を取得
     adc_go();
+    
+    // 最初の1秒間は設定確認要にボタンが押し続けられているかチェックしているので、その一秒をのぞいた秒数を設定する。
     uint16_t timer_seconds = 299U;
     uint8_t timer_minutes = 5U;
     if (ADRES <= 0x33U) {
@@ -862,16 +864,14 @@ int main(void) {
     // タイマー処理呼び出し
     if (timer_main(timer_seconds)) {
         // キャンセルされた場合
-
+       
         // ボタンが離されるまで待つ
         wait_button(1);
+      
         // LEDを2秒間点滅させる
         flush_led(40U);
 
-
-    } else {
-
-    }
+    } 
 
     // プリスケーラを 1:16 に変更
     OPTION = 0b00000011;
