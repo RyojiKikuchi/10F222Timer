@@ -78,12 +78,12 @@
 #define TMR_MUSIC_EIGHTH        (TMR_MUSIC_QUARTER / 2U)
 #define TMR_MUSIC_SIXTEENTH     (TMR_MUSIC_QUARTER / 4U)
 
-#define PLAY_NONE
+//#define PLAY_NONE
 //#define PLAY_TEST
 //#define SEIJA                 // 聖者の行進(T=150)
-//#define GAMEUP_RUSH            // ゲームアップ・ラッシュ(T=210)
+//#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
 //#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
-//#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
+#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
 
