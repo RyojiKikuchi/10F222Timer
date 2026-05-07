@@ -263,32 +263,29 @@ static void play(uint8_t key) {
     uint8_t note_tmr = 0;
     // 前回タイマー値
     uint8_t prev_tmr = 0;
-    // ボタン押下チェック用
-    uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
 
-    TMR0 = 0;
-
+    // 音符長分のループ
     while (loop--) {
+        // 2ms分のループ
+        TMR0 = 0;
         while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
+            // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
             if (prev_tmr != TMR0) {
                 prev_tmr = TMR0;
                 note_tmr++;
+                // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
                 if (note_tmr >= key && play_note) {
                     note_tmr = 0;
                     BUZZER_PIN = ~BUZZER_PIN;
                 }
             }
+            // ボタン押下でキャンセルの処理
             if (SW_PIN == 0) {
-                button--;
-                if (!button) {
-                    is_music_stop = 1;
-                    goto play_exit;
-                }
-                continue;
+                // チャタリングキャンセルは省略
+                is_music_stop = 1;
+                goto play_exit;
             }
-            button = BUTTON_PRESS_DETECTION_CYCLE;
         }
-        TMR0 = 0;
     }
 
 play_exit:
@@ -888,6 +885,7 @@ go_sleep:
     wait_button(1);
 
     // スリープ
+    // スリープ解除後はmain()の先頭から処理が行われる
     SLEEP();
 
     // returnがないと警告が出るのでreturn記載しておく
