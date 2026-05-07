@@ -292,7 +292,6 @@ static void play(uint8_t key) {
     }
 
 play_exit:
-    play_length = TMR_MUSIC_QUARTER;
     BUZZER_PIN = 0;
     LED_PIN = 0;
 }
@@ -303,6 +302,8 @@ play_exit:
 static void play_music() {
 
     uint8_t i, j;
+    is_music_stop = 0;
+    play_length = TMR_MUSIC_QUARTER;
 
 #ifdef PLAY_NONE
     play(249); // 休符
@@ -895,4 +896,3 @@ go_sleep:
     return EXIT_SUCCESS;
 
 }
-
