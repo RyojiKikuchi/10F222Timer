@@ -143,8 +143,12 @@ VDD (5V)
 
 | マクロ名 | 楽曲 |
 |---------|------|
-| `RAMEN` | ラーメン完成！歓喜のチャルメラ（デフォルト） |
+| `RAMEN` | ラーメン完成！歓喜のチャルメラ |
 | `SEIJA` | 聖者の行進 |
+| `GAMEUP_RUSH` | ゲームアップ・ラッシュ |
+| `KITCHEN_RUSH` | キッチン・ラッシュ |
+| `COPILOT_ORIGINAL` | Copilot Original |
+| `GOOGLE_ORIGINAL` | GoogleAI Original |
 
 ---
 
@@ -175,7 +179,7 @@ play_music();
 ### 最大音数
 
 **最大 170words 程度** まで設定できます（プログラムメモリの制約による）。
-概ねplay()呼び出しで2words、長さ設定で1word消費しまが、正確な値はビルドしないと分かりません。
+概ねplay()呼び出しで2words、長さ設定で1word消費しますが、正確な値はビルドしないと分かりません。
 
 ### 音符/休符の長さ
 
