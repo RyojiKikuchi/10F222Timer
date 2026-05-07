@@ -44,7 +44,7 @@
  * ============================================================ */
 
 /* version */
-#define VERSION_STRING   "1.00"
+#define VERSION_STRING   "1.10"
 
 /* ============================================================
  *  Construction
@@ -65,13 +65,15 @@
  *  Music Play
  * ============================================================ */
 
+#define TMR_MUSIC_2MS_LOOP_COUNT  250U    // プリスケーラ 1:16用
+
 // T=120で250
 // 数字を小さくするとその分テンポが早くなる
 // 遅くすることは出来ない
 //#define TMR_MUSIC_QUARTER       250U    // T=120
-#define TMR_MUSIC_QUARTER       218U    // T=150
+//#define TMR_MUSIC_QUARTER       218U    // T=150
 //#define TMR_MUSIC_QUARTER       187U    // T=180
-//#define TMR_MUSIC_QUARTER       156U    // T=210
+#define TMR_MUSIC_QUARTER       156U    // T=210
 //#define TMR_MUSIC_QUARTER       125U    // T=240
 #define TMR_MUSIC_EIGHTH        (TMR_MUSIC_QUARTER / 2U)
 #define TMR_MUSIC_SIXTEENTH     (TMR_MUSIC_QUARTER / 4U)
@@ -79,8 +81,8 @@
 //#define PLAY_NONE
 //#define PLAY_TEST
 //#define SEIJA                 // 聖者の行進(T=150)
-#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
-//#define ORG_CRYSTAL_BREEZE    // Crystal Breeze(T=120)
+#define GAMEUP_RUSH            // ゲームアップ・ラッシュ(T=210)
+//#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
 //#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
@@ -255,11 +257,11 @@ static void play(uint8_t key) {
         LED_PIN = 1;
     }
 
-    // ループ回数
+    // 音符長ループ回数
     uint8_t loop = play_length;
     // 半周期計測用
     uint8_t note_tmr = 0;
-    // 前回タイマー
+    // 前回タイマー値
     uint8_t prev_tmr = 0;
     // ボタン押下チェック用
     uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
@@ -267,8 +269,9 @@ static void play(uint8_t key) {
     TMR0 = 0;
 
     while (loop--) {
-        while (TMR0 < 250) {
+        while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
             if (prev_tmr != TMR0) {
+                prev_tmr = TMR0;
                 note_tmr++;
                 if (note_tmr >= key && play_note) {
                     note_tmr = 0;
@@ -444,89 +447,120 @@ static void play_music() {
 
     play_length = TMR_MUSIC_QUARTER; // 4分音符に戻る
     play(15); // C8 (チャーン！)
-    play(249); // 最後の無音
+    //    play(249); // 最後の無音      バグ修正でメモリ不足になったので最後の休符は削除する
 
 #endif
 
 #ifdef KITCHEN_RUSH
 
-// --- メインループ：アラーム全体を2回繰り返す
-for(j = 0; j < 2; j++) {
+    // --- メインループ：アラーム全体を2回繰り返す
+    for (j = 0; j < 2; j++) {
 
-    // フレーズ1：軽快な三連符風リズム (1オクターブ上げたC7-G6)
-    for(i = 0; i < 4; i++) {
-        play_length = TMR_MUSIC_EIGHTH;
-        play(30);  // C7
-        play(40);  // G6
-        play(30);  // C7
-        play(249); // 8分休符
+        // フレーズ1：軽快な三連符風リズム (1オクターブ上げたC7-G6)
+        for (i = 0; i < 4; i++) {
+            play_length = TMR_MUSIC_EIGHTH;
+            play(30); // C7
+            play(40); // G6
+            play(30); // C7
+            play(249); // 8分休符
+        }
+
+        // フレーズ2：少し音程を上げて急かす (D7-A6)
+        for (i = 0; i < 4; i++) {
+            play_length = TMR_MUSIC_EIGHTH;
+            play(27); // D7
+            play(36); // A6
+            play(27); // D7
+            play(249); // 8分休符
+        }
+
+        // フレーズ3：最高音での警告音 (C8)
+        for (i = 0; i < 8; i++) {
+            play_length = TMR_MUSIC_SIXTEENTH;
+            play(15); // C8
+            play(249); // 16分休符
+        }
     }
 
-    // フレーズ2：少し音程を上げて急かす (D7-A6)
-    for(i = 0; i < 4; i++) {
-        play_length = TMR_MUSIC_EIGHTH;
-        play(27);  // D7
-        play(36);  // A6
-        play(27);  // D7
-        play(249); // 8分休符
-    }
-
-    // フレーズ3：最高音での警告音 (C8)
-    for(i = 0; i < 8; i++) {
-        play_length = TMR_MUSIC_SIXTEENTH;
-        play(15);  // C8
-        play(249); // 16分休符
-    }
-}
-
-// --- 締め：完了を知らせるチャイム
-play(20);  // G7
-play(24);  // E7
-play(30);  // C7
-play(249); // 終了
+    // --- 締め：完了を知らせるチャイム
+    play(20); // G7
+    play(24); // E7
+    play(30); // C7
+    play(249); // 終了
 
 #endif
-    
-#ifdef ORG_CRYSTAL_BREEZE
 
-    // オリジナル曲：Crystal Breeze
-    // 合計 32音
+#ifdef GAMEUP_RUSH
 
-    play(60); // C6
-    play(80); // G5
-    play(95); // E5
-    play(106); // D5
-    play(119); // C5
-    play(249); // 休符
-    play(119); // C5
-    play(106); // D5
+    // --- Part 1: 警告フェーズ (耳を引く)
+    for (i = 0; i < 3; i++) {
+        play_length = TMR_MUSIC_EIGHTH;
+        play(30); // C7
+        play(20); // G7
+        play(15); // C8
+        play(249); // 休符
+    }
 
-    play(95); // E5
-    play(80); // G5
-    play(71); // A5
-    play(63); // B5
-    play(60); // C6
-    play(249); // 休符
-    play(60); // C6
-    play(249); // 休符
+    // --- Part 2: 加速フェーズ (さらに急かす)
+    for (i = 0; i < 6; i++) {
+        play_length = TMR_MUSIC_SIXTEENTH;
+        play(15); // C8
+        play(20); // G7
+    }
 
-    play(53); // D6
-    play(60); // C6
-    play(63); // B5
-    play(71); // A5
-    play(80); // G5
-    play(249); // 休符
-    play(95); // E5
-    play(106); // D5
+    // --- 追加：Part 2.5 ゲームミュージック風フレーズ (約50-60 words消費)
+    // 少し跳ねるようなリズムのAメロ
+    for (i = 0; i < 2; i++) {
+        play(40); // G6 (ジャン)
+        play_length = TMR_MUSIC_EIGHTH;
+        play(47); // E6
+        play(45); // F6
+        play(40); // G6
+        play(249); // 休符
 
-    play(119); // C5
-    play(142); // A4
-    play(159); // G4
-    play(142); // A4
-    play(119); // C5
-    play(249); // 休符
-    play(119); // C5
-    play(249); // 休符
+        play_length = TMR_MUSIC_EIGHTH;
+        play(30); // C7 (高音でアクセント)
+        play(30); // C7
+        play(40); // G6
+        play(47); // E6
+        play(249); // 休符
+    }
+
+    // Bメロ：音階が動く疾走感パート
+    play_length = TMR_MUSIC_EIGHTH;
+    play(40); // G6
+    play(36); // A6
+    play(34); // A#6
+    play(30); // C7
+    play(27); // D7
+    play(24); // E7
+    play(20); // G7
+    play(15); // C8
+
+    // --- ここから元のPart 3へ繋ぐ
+
+    // --- Part 3: 完了フレーズ (達成感のあるメロディ)
+    // ここで少し速度を落としたように感じさせるため、4分音符を混ぜます
+    play(30); // C7
+    play(24); // E7
+    play(20); // G7
+    play_length = TMR_MUSIC_EIGHTH;
+    play(15); // C8 (タ)
+    play(15); // C8 (タ)
+    play(15); // C8 (タン！)
+
+    // --- Part 4: メモリの許す限り「キラキラ音」を追加 (約20words)
+    for (i = 0; i < 2; i++) {
+        play_length = TMR_MUSIC_SIXTEENTH;
+        play(30); // C7
+        play(27); // D7
+        play(24); // E7
+        play(22); // F7
+        play(20); // G7
+        play(18); // A7
+        play(16); // B7
+        play(15); // C8
+    }
 
 #endif
 
