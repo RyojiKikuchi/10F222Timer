@@ -51,7 +51,7 @@
  * ============================================================ */
 
 /* ボタンのチャタリング防止のため、ボタン押下判定するサイクル数 */
-#define BUTTON_PRESS_DETECTION_CYCLE    20U /* 1cycle = 0.5u * 20 = 10usec */
+#define BUTTON_PRESS_DETECTION_CYCLE    10U /* 1cycle = 0.5u * 20 = 10usec */
 
 /* ============================================================
  *  Pin Define
@@ -71,16 +71,17 @@
 // 数字を小さくするとその分テンポが早くなる
 // 遅くすることは出来ない
 //#define TMR_MUSIC_QUARTER       250U    // T=120
-#define TMR_MUSIC_QUARTER       218U    // T=150
-//#define TMR_MUSIC_QUARTER       187U    // T=180
-//#define TMR_MUSIC_QUARTER       156U    // T=210
+#define TMR_MUSIC_QUARTER       200U    // T=150
+//#define TMR_MUSIC_QUARTER       166U    // T=180
+//#define TMR_MUSIC_QUARTER       150U    // T=200
+//#define TMR_MUSIC_QUARTER       143U    // T=210
 //#define TMR_MUSIC_QUARTER       125U    // T=240
-#define TMR_MUSIC_EIGHTH        (TMR_MUSIC_QUARTER / 2U)
-#define TMR_MUSIC_SIXTEENTH     (TMR_MUSIC_QUARTER / 4U)
+#define TMR_MUSIC_EIGHTH        (uint8_t)(TMR_MUSIC_QUARTER / 2U)
+#define TMR_MUSIC_SIXTEENTH     (uint8_t)(TMR_MUSIC_QUARTER / 4U)
 
-//#define PLAY_NONE
+#define PLAY_NONE
 //#define PLAY_TEST
-#define SEIJA                 // 聖者の行進(T=150)
+//#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
 //#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
 //#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
@@ -148,10 +149,15 @@ static void system_init() {
 
 /* ADC読み取り */
 static void adc_go() {
+    // ADC ON
     ADCON0bits.ADON = 1;
-    __delay_us(8);
+    // アクイジションタイム(10us))
+    __delay_us(10);
+    // 変換開始
     ADCON0bits.GO = 1;
+    // 変換終了wait
     while (ADCON0bits.nDONE == 1);
+    // ADC OFF
     ADCON0bits.ADON = 0;
 }
 
@@ -223,8 +229,8 @@ static void flush_led(uint8_t loop) {
 static uint8_t timer_main(uint16_t sec) {
     // (8000000 / 4) = 2000000 MHz = 0.5usec
     // プリスケーラ 1:64 = 0.5 * 64 = 32us
-    for (uint16_t i = 0; i < sec; i++) {
-        LED_PIN = i & 0x01U;
+    while (sec--) {
+        LED_PIN = sec & 0x01U;
         if (wait_second()) {
             return 1;
         }
@@ -242,7 +248,7 @@ static uint8_t timer_main(uint16_t sec) {
  *     TMR_MUSIC_SIXTEENTH 16分音符
  *  play_length はplay()内で4分音符に初期化
  * 
- *  keyの最大値は 249 まで。245以上で休符。
+ *  key = 255 は休符
  * 
  *  */
 static void play(uint8_t key) {
@@ -251,7 +257,7 @@ static void play(uint8_t key) {
     if (is_music_stop) return;
     int8_t play_note = 1;
 
-    if (key >= 245) {
+    if (key == 0xFFU) {
         play_note = 0;
         LED_PIN = 0;
     } else {
@@ -305,37 +311,37 @@ static void play_music() {
     uint8_t i, j;
 
 #ifdef PLAY_NONE
-    play(249); // 休符
+    play(255); // 休符
 #endif
 
 #ifdef PLAY_TEST
     play(60); // C6
     play(60); // C6
-    play(249); // 休符(1/4)
+    play(255); // 休符(1/4)
     play(53); // D6
     play(53); // D6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(1/8)
+    play(255); // 休符(1/8)
     play(47); // E6
     play(47); // E6
     play_length = TMR_MUSIC_SIXTEENTH;
-    play(249); // 休符(1/16)
+    play(255); // 休符(1/16)
     play(45); // F6
     play(45); // F6
-    play(249); // 休符
-    play(249); // 休符
-    play(249); // 休符
+    play(255); // 休符
+    play(255); // 休符
+    play(255); // 休符
     play(60); // C6
     play(60); // C6
-    play(249); // 休符
+    play(255); // 休符
     play(53); // D6
     play(53); // D6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(47); // E6
     play(47); // E6
     play_length = TMR_MUSIC_SIXTEENTH;
-    play(249); // 休符(1/8)
+    play(255); // 休符(1/8)
     play(45); // F6
     play(45); // F6
 
@@ -352,7 +358,7 @@ static void play_music() {
         play(47); // E6
         play(45); // F6
         play(40); // G6
-        play(249); // 休符
+        play(255); // 休符
     }
 
     play(60); // C6
@@ -363,7 +369,7 @@ static void play_music() {
     play(60); // C6
     play(47); // E6
     play(53); // D6
-    play(249); // 休符
+    play(255); // 休符
 
     // --- Bメロ：サビ
     play(47); // E6
@@ -374,7 +380,7 @@ static void play_music() {
     play(40); // G6
     play(40); // G6
     play(45); // F6
-    play(249); // 休符
+    play(255); // 休符
 
     // --- Cメロ：結び
     play(47); // E6
@@ -386,7 +392,7 @@ static void play_music() {
     play(60); // C6
 
     // --- 2周目：8分音符を混ぜて豪華に (メモリを使い切る)
-    play(249); // 間
+    play(255); // 間
     for (i = 0; i < 2; i++) {
         play_length = TMR_MUSIC_EIGHTH;
         play(60);
@@ -394,7 +400,7 @@ static void play_music() {
         play(47); // E6
         play(45); // F6
         play(40); // G6
-        play(249); // 休符
+        play(255); // 休符
     }
 
     // クライマックス：1オクターブ上で連打
@@ -411,7 +417,7 @@ static void play_music() {
     // 1. 裏打ちのリズムでさらに盛り上げる (約24words)
     for (i = 0; i < 4; i++) {
         play_length = TMR_MUSIC_EIGHTH;
-        play(249); // 裏拍を感じさせるための短い休符
+        play(255); // 裏拍を感じさせるための短い休符
         play_length = TMR_MUSIC_EIGHTH;
         play(30); // C7
     }
@@ -443,11 +449,11 @@ static void play_music() {
     play_length = TMR_MUSIC_EIGHTH;
     play(30); // C7 (チャッ)
     play(30); // C7 (チャッ)
-    play(249); // 休符 (タメ)
+    play(255); // 休符 (タメ)
 
     play_length = TMR_MUSIC_QUARTER; // 4分音符に戻る
     play(15); // C8 (チャーン！)
-    //    play(249); // 最後の無音      バグ修正でメモリ不足になったので最後の休符は削除する
+    //    play(255); // 最後の無音      バグ修正でメモリ不足になったので最後の休符は削除する
 
 #endif
 
@@ -462,7 +468,7 @@ static void play_music() {
             play(30); // C7
             play(40); // G6
             play(30); // C7
-            play(249); // 8分休符
+            play(255); // 8分休符
         }
 
         // フレーズ2：少し音程を上げて急かす (D7-A6)
@@ -471,14 +477,14 @@ static void play_music() {
             play(27); // D7
             play(36); // A6
             play(27); // D7
-            play(249); // 8分休符
+            play(255); // 8分休符
         }
 
         // フレーズ3：最高音での警告音 (C8)
         for (i = 0; i < 8; i++) {
             play_length = TMR_MUSIC_SIXTEENTH;
             play(15); // C8
-            play(249); // 16分休符
+            play(255); // 16分休符
         }
     }
 
@@ -486,7 +492,7 @@ static void play_music() {
     play(20); // G7
     play(24); // E7
     play(30); // C7
-    play(249); // 終了
+    play(255); // 終了
 
 #endif
 
@@ -498,7 +504,7 @@ static void play_music() {
         play(30); // C7
         play(20); // G7
         play(15); // C8
-        play(249); // 休符
+        play(255); // 休符
     }
 
     // --- Part 2: 加速フェーズ (さらに急かす)
@@ -516,14 +522,14 @@ static void play_music() {
         play(47); // E6
         play(45); // F6
         play(40); // G6
-        play(249); // 休符
+        play(255); // 休符
 
         play_length = TMR_MUSIC_EIGHTH;
         play(30); // C7 (高音でアクセント)
         play(30); // C7
         play(40); // G6
         play(47); // E6
-        play(249); // 休符
+        play(255); // 休符
     }
 
     // Bメロ：音階が動く疾走感パート
@@ -575,14 +581,14 @@ static void play_music() {
     play(113); // C#5 (少し外したチャルメラ風)
     play(127); // B4
     play(142); // A4
-    play(249); // 休符
+    play(255); // 休符
     play(142); // A4
     play(127); // B4
     play(113); // C#5
     play(127); // B4
     play(142); // A4
     play(127); // B4
-    play(249); // 休符
+    play(255); // 休符
 
     // --- 期待感：音階が上がっていく ---
     play(119); // C5
@@ -609,10 +615,10 @@ static void play_music() {
     play(95); // E5
     play(95); // E5
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(106); // D5
     play(106); // D5
-    play(249); // 休符
+    play(255); // 休符
 
     play(95); // E5
     play(95); // E5
@@ -628,10 +634,10 @@ static void play_music() {
     play(95); // E5
     play(106); // D5
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(119); // C5
     play(119); // C5
-    play(249); // 休符
+    play(255); // 休符
 
     // --- フィナーレ：高らかに終了 ---
     play(80); // G5
@@ -639,9 +645,9 @@ static void play_music() {
     play(47); // E6
     play(40); // G6
     play(30); // C7
-    play(249); // 休符
+    play(255); // 休符
     play(30); // C7
-    play(249); // 休符
+    play(255); // 休符
     play(30); // C7
     play(30); // C7
 
@@ -649,67 +655,67 @@ static void play_music() {
 
 #ifdef COPILOT_ORIGINAL
 
-    play(249); // 休符
+    play(255); // 休符
     play(119); // C5
     play(95); // E5
     play(80); // G5
     play(60); // C6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(63); // B5
     play(71); // A5
     play(80); // G5
     play_length = TMR_MUSIC_SIXTEENTH;
-    play(249); // 休符(1/8)
+    play(255); // 休符(1/8)
     play(95); // E5
     play(106); // D5
     play(119); // C5
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(159); // G4
     play(127); // B4
     play(119); // C5
-    play(249); // 休符
+    play(255); // 休符
     play(119); // C5
     play(134); // A#4
     play(142); // A4
     play(150); // G#4
     play(159); // G4
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(95); // E5
     play(106); // D5
     play(119); // C5
     play_length = TMR_MUSIC_SIXTEENTH;
-    play(249); // 休符(1/8)
+    play(255); // 休符(1/8)
     play(119); // C5
     play(150); // G#4
     play(159); // G4
     play(127); // B4
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(119); // C5
     play(95); // E5
     play(80); // G5
     play(60); // C6
-    play(249); // 休符
+    play(255); // 休符
     play(63); // B5
     play(71); // A5
     play(80); // G5
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(95); // E5
     play(106); // D5
     play(119); // C5
     play_length = TMR_MUSIC_SIXTEENTH;
-    play(249); // 休符(1/8)
+    play(255); // 休符(1/8)
     play(142); // A4
     play(150); // G#4
     play(159); // G4
     play(169); // F#4
     play(179); // F4
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(119); // C5
     play(95); // E5
     play(60); // C6
@@ -726,77 +732,77 @@ static void play_music() {
     play(80); // G5
     play(60); // C6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(60); // C6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
 
     play(119); // C5
     play(95); // E5
     play(80); // G5
     play(60); // C6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(60); // C6
-    play(249); // 休符
+    play(255); // 休符
 
     play(106); // D5
     play(89); // F5
     play(71); // A5
     play(53); // D6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(53); // D6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
 
     play(106); // D5
     play(89); // F5
     play(71); // A5
     play(53); // D6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(53); // D6
-    play(249); // 休符
+    play(255); // 休符
 
     play(95); // E5
     play(80); // G5
     play(60); // C6
     play(47); // E6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(47); // E6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
 
     play(89); // F5
     play(71); // A5
     play(53); // D6
     play(45); // F6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(45); // F6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
 
     play(80); // G5
     play(60); // C6
     play(47); // E6
     play(40); // G6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(40); // G6
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
 
     play(60); // C6
     play(47); // E6
     play(40); // G6
     play(30); // C7
     play_length = TMR_MUSIC_EIGHTH;
-    play(249); // 休符(短)
+    play(255); // 休符(短)
     play(30); // C7
-    play(249); // 休符
+    play(255); // 休符
 
 #endif  
 
