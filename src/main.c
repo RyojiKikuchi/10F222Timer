@@ -80,10 +80,10 @@
 
 //#define PLAY_NONE
 //#define PLAY_TEST
-//#define SEIJA                 // 聖者の行進(T=150)
+#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
 //#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
-#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
+//#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
 
@@ -94,6 +94,7 @@
 // 音楽再生を停止するためのフラグ
 static uint8_t is_music_stop = 0;
 static uint8_t play_length = TMR_MUSIC_QUARTER;
+static uint8_t play_length_reset = 1;
 
 /* ============================================================
  *  システム初期化
@@ -289,7 +290,9 @@ static void play(uint8_t key) {
     }
 
 play_exit:
-    play_length = TMR_MUSIC_QUARTER;
+    if (play_length_reset) {
+        play_length = TMR_MUSIC_QUARTER;
+    }
     BUZZER_PIN = 0;
     LED_PIN = 0;
 }
@@ -830,7 +833,7 @@ int main(void) {
 
     // AN0の電圧からタイマーの時間を取得
     adc_go();
-    
+
     // 最初の1秒間は設定確認要にボタンが押し続けられているかチェックしているので、その一秒をのぞいた秒数を設定する。
     uint16_t timer_seconds = 299U;
     uint8_t timer_minutes = 5U;
@@ -864,14 +867,14 @@ int main(void) {
     // タイマー処理呼び出し
     if (timer_main(timer_seconds)) {
         // キャンセルされた場合
-       
+
         // ボタンが離されるまで待つ
         wait_button(1);
-      
+
         // LEDを2秒間点滅させる
         flush_led(40U);
 
-    } 
+    }
 
     // プリスケーラを 1:16 に変更
     OPTION = 0b00000011;
