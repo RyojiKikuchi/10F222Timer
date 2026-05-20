@@ -79,12 +79,12 @@
 #define TMR_MUSIC_EIGHTH        (uint8_t)(TMR_MUSIC_QUARTER / 2U)
 #define TMR_MUSIC_SIXTEENTH     (uint8_t)(TMR_MUSIC_QUARTER / 4U)
 
-#define PLAY_NONE
+//#define PLAY_NONE
 //#define PLAY_TEST
 //#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
 //#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
-//#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
+#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
 
@@ -858,7 +858,8 @@ int main(void) {
     }
 
     // ボタンが1秒以上押下されていた場合は設定時間分LEDを点滅させる
-    if (wait_second()) {
+    wait_second();
+    if (SW_PIN == 0) {
         LED_PIN = 0;
         wait_button(1);
         while (timer_minutes--) {
