@@ -51,7 +51,7 @@
  * ============================================================ */
 
 /* ボタンのチャタリング防止のため、ボタン押下判定するサイクル数 */
-#define BUTTON_PRESS_DETECTION_CYCLE    10U /* 1cycle = 0.5u * 20 = 10usec */
+#define BUTTON_PRESS_DETECTION_TMR  250U /* 8ms */
 
 /* ============================================================
  *  Pin Define
@@ -77,7 +77,13 @@
 //#define TMR_MUSIC_QUARTER       143U    // T=210
 //#define TMR_MUSIC_QUARTER       125U    // T=240
 #define TMR_MUSIC_EIGHTH        (uint8_t)(TMR_MUSIC_QUARTER / 2U)
+#define TMR_MUSIC_TRIPLET       (uint8_t)(TMR_MUSIC_QUARTER / 3U)    // 3連符用の長さ（4分音符を3等分）
 #define TMR_MUSIC_SIXTEENTH     (uint8_t)(TMR_MUSIC_QUARTER / 4U)
+
+// プリスケーラー 2を設定すると音の長さが*2になりテンポが1/2になる
+// T=120より遅いテンポを設定する場合に使用する
+#define TMR_MUSIC_PRESCALER     1U
+//#define TMR_MUSIC_PRESCALER     2U
 
 //#define PLAY_NONE
 //#define PLAY_TEST
@@ -94,8 +100,16 @@
 
 // 音楽再生を停止するためのフラグ
 static uint8_t is_music_stop = 0;
+// デフォルトの音符長
+static uint8_t play_length_default = TMR_MUSIC_QUARTER;
+// 音符の初期値
 static uint8_t play_length = TMR_MUSIC_QUARTER;
+// 発音毎に音符長をリセットする
 static uint8_t play_length_reset = 1;
+// 音符の長さのscaler
+static uint8_t play_length_scaler = TMR_MUSIC_PRESCALER;
+// 発音毎にscalerをリセットする
+static uint8_t play_length_scaler_reset = 1;
 
 /* ============================================================
  *  システム初期化
@@ -179,12 +193,9 @@ static uint8_t wait_second() {
     while (loop--) {
         // 8msecのループ
         // 32us * 250 = 8ms loop
-        while (TMR0 < TMR_8MS_LOOP_COUNT) {
-            if (SW_PIN == 1) {
-                button = 0;
-            }
-        }
+        while (TMR0 < TMR_8MS_LOOP_COUNT);
         TMR0 = 0;
+        if (SW_PIN == 1) button = 0;
     }
 
     return button;
@@ -198,15 +209,10 @@ static uint8_t wait_second() {
  * 
  *   */
 static void wait_button(uint8_t status) {
-    uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
-    while (1) {
-        if (SW_PIN == status) {
-            button--;
-            if (!button) {
-                return;
-            }
-        } else {
-            button = BUTTON_PRESS_DETECTION_CYCLE;
+    TMR0 = 0;
+    while (TMR0 < BUTTON_PRESS_DETECTION_TMR) {
+        if (SW_PIN != status) {
+            TMR0 = 0;
         }
     }
 }
@@ -254,43 +260,37 @@ static uint8_t timer_main(uint16_t sec) {
 static void play(uint8_t key) {
 
     //　キャンセル済み判定
-    if (is_music_stop) return;
-    int8_t play_note = 1;
-
-    if (key == 0xFFU) {
-        play_note = 0;
-        LED_PIN = 0;
-    } else {
-        LED_PIN = 1;
+    if (SW_PIN == 0) {
+        is_music_stop = 1;
     }
+    if (is_music_stop) goto play_exit;
 
-    // 音符長ループ回数
-    uint8_t loop = play_length;
+    // scaler設定
+    uint8_t scaler = play_length_scaler;
     // 半周期計測用
     uint8_t note_tmr = 0;
     // 前回タイマー値
     uint8_t prev_tmr = 0;
 
-    // 音符長分のループ
-    while (loop--) {
-        // 2ms分のループ
-        TMR0 = 0;
-        while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
-            // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
-            if (prev_tmr != TMR0) {
-                prev_tmr = TMR0;
-                note_tmr++;
-                // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
-                if (note_tmr >= key && play_note) {
-                    note_tmr = 0;
-                    BUZZER_PIN = ~BUZZER_PIN;
+    while (scaler--) {
+        // 音符長ループ回数
+        uint8_t loop = play_length;
+        // 音符長分のループ
+        while (loop--) {
+            // 2ms分のループ
+            TMR0 = 0;
+            while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
+                // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
+                if (prev_tmr != TMR0) {
+                    prev_tmr = TMR0;
+                    note_tmr++;
+                    // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
+                    if (key != 0xFFU && note_tmr >= key) {
+                        note_tmr = 0;
+                        BUZZER_PIN = ~BUZZER_PIN;
+                        LED_PIN = 1;
+                    }
                 }
-            }
-            // ボタン押下でキャンセルの処理
-            if (SW_PIN == 0) {
-                // チャタリングキャンセルは省略
-                is_music_stop = 1;
-                goto play_exit;
             }
         }
     }
@@ -453,7 +453,7 @@ static void play_music() {
 
     play_length = TMR_MUSIC_QUARTER; // 4分音符に戻る
     play(15); // C8 (チャーン！)
-    //    play(255); // 最後の無音      バグ修正でメモリ不足になったので最後の休符は削除する
+    play(255); // 最後の無音      バグ修正でメモリ不足になったので最後の休符は削除する
 
 #endif
 
@@ -828,7 +828,8 @@ int main(void) {
     }
 
     // チャタリング判定期間にボタンが離されたら再度スリープする
-    for (uint8_t i = 0; i < BUTTON_PRESS_DETECTION_CYCLE; i++) {
+    TMR0 = 0;
+    while (TMR0 < BUTTON_PRESS_DETECTION_TMR) {
         if (SW_PIN == 1) {
             goto go_sleep;
         }
@@ -881,6 +882,8 @@ int main(void) {
         // LEDを2秒間点滅させる
         flush_led(40U);
 
+        goto go_sleep;
+
     }
 
     // プリスケーラを 1:16 に変更
@@ -891,7 +894,8 @@ int main(void) {
 
 go_sleep:
 
-    // ボタンが離されるまで待つ
+    // SLEEP前にGPIOの状態を取得するためにwait_buttonを呼び出す
+    // SLEEP前のGPIO読込が目的のためコード削減のためプリスケーラ設定は戻さない
     wait_button(1);
 
     // スリープ
