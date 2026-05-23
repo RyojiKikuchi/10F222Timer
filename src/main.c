@@ -51,7 +51,7 @@
  * ============================================================ */
 
 /* ボタンのチャタリング防止のため、ボタン押下判定するサイクル数 */
-#define BUTTON_PRESS_DETECTION_CYCLE    10U /* 1cycle = 0.5u * 20 = 10usec */
+#define BUTTON_PRESS_DETECTION_TMR  250U /* 8ms */
 
 /* ============================================================
  *  Pin Define
@@ -71,8 +71,8 @@
 // 数字を小さくするとその分テンポが早くなる
 // 遅くすることは出来ない
 //#define TMR_MUSIC_QUARTER       250U    // T=120
-#define TMR_MUSIC_QUARTER       200U    // T=150
-//#define TMR_MUSIC_QUARTER       166U    // T=180
+//#define TMR_MUSIC_QUARTER       200U    // T=150
+#define TMR_MUSIC_QUARTER       166U    // T=180
 //#define TMR_MUSIC_QUARTER       150U    // T=200
 //#define TMR_MUSIC_QUARTER       143U    // T=210
 //#define TMR_MUSIC_QUARTER       125U    // T=240
@@ -83,8 +83,8 @@
 //#define PLAY_TEST
 //#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
-//#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
-#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
+#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
+//#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
 
@@ -179,12 +179,9 @@ static uint8_t wait_second() {
     while (loop--) {
         // 8msecのループ
         // 32us * 250 = 8ms loop
-        while (TMR0 < TMR_8MS_LOOP_COUNT) {
-            if (SW_PIN == 1) {
-                button = 0;
-            }
-        }
+        while (TMR0 < TMR_8MS_LOOP_COUNT);
         TMR0 = 0;
+        if (SW_PIN == 1) button = 0;
     }
 
     return button;
@@ -198,15 +195,10 @@ static uint8_t wait_second() {
  * 
  *   */
 static void wait_button(uint8_t status) {
-    uint8_t button = BUTTON_PRESS_DETECTION_CYCLE;
-    while (1) {
-        if (SW_PIN == status) {
-            button--;
-            if (!button) {
-                return;
-            }
-        } else {
-            button = BUTTON_PRESS_DETECTION_CYCLE;
+    TMR0 = 0;
+    while(TMR0 < BUTTON_PRESS_DETECTION_TMR) {
+        if (SW_PIN != status) {
+            TMR0 = 0;
         }
     }
 }
@@ -828,7 +820,8 @@ int main(void) {
     }
 
     // チャタリング判定期間にボタンが離されたら再度スリープする
-    for (uint8_t i = 0; i < BUTTON_PRESS_DETECTION_CYCLE; i++) {
+    TMR0 = 0;
+    while(TMR0 < BUTTON_PRESS_DETECTION_TMR) {
         if (SW_PIN == 1) {
             goto go_sleep;
         }
@@ -881,6 +874,8 @@ int main(void) {
         // LEDを2秒間点滅させる
         flush_led(40U);
 
+        goto go_sleep;
+        
     }
 
     // プリスケーラを 1:16 に変更
