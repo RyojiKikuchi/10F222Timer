@@ -71,8 +71,8 @@
 // 数字を小さくするとその分テンポが早くなる
 // 遅くすることは出来ない
 //#define TMR_MUSIC_QUARTER       250U    // T=120
-#define TMR_MUSIC_QUARTER       200U    // T=150
-//#define TMR_MUSIC_QUARTER       166U    // T=180
+//#define TMR_MUSIC_QUARTER       200U    // T=150
+#define TMR_MUSIC_QUARTER       166U    // T=180
 //#define TMR_MUSIC_QUARTER       150U    // T=200
 //#define TMR_MUSIC_QUARTER       143U    // T=210
 //#define TMR_MUSIC_QUARTER       125U    // T=240
@@ -89,8 +89,8 @@
 //#define PLAY_TEST
 //#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
-//#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
-#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
+#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
+//#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
 
