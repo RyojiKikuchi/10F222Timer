@@ -21,12 +21,12 @@
  *  Configuration bits
  * ============================================================ */
 
-/* CONFIG1 */
-#pragma config  MCLRE   = 0     /* MCLRを使用しない(GP3として使用)  */
-#pragma config  CP      = 0     /* Code Protection disagled */
-#pragma config  WDTE    = 0     /* Watchdogtimer disabled */
-#pragma config  MCPU    = 0     /* MCLR Pullup enabled */
-#pragma config  IOSCFS  = 1     /* Clock 8MHz */
+// CONFIG
+#pragma config IOSCFS = 8MHZ    // Internal Oscillator Frequency Select bit (8 MHz)
+#pragma config MCPU = ON        // Master Clear Pull-up Enable bit (Pull-up enabled)
+#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
+#pragma config CP = ON          // Code protection bit (Code protection on)
+#pragma config MCLRE = OFF      // GP3/MCLR Pin Function Select bit (GP3/MCLR pin function is digital I/O, MCLR internally tied to VDD)
 
 /* ============================================================
  *  Clock Speed
@@ -87,9 +87,9 @@
 
 //#define PLAY_NONE
 //#define PLAY_TEST
-//#define SEIJA                 // 聖者の行進(T=150)
+#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
-#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
+//#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
 //#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
@@ -813,11 +813,8 @@ static void play_music() {
  */
 int main(void) {
 
-    //asm("MOVWF OSCCAL");
-
     // 書込失敗で校正値が削除されてしまったので、過去のHEXファイルにあった値を設定
-    // 別チップ使用する場合は asm("MOVWF OSCCAL"); に戻す
-    OSCCAL = 0x22;
+    // OSCCAL = 0x22;
 
     // 初期化
     system_init();

@@ -37,7 +37,7 @@
         <platform>3</platform>
       </toolsSet>
       <packs>
-        <pack name="PIC10-12Fxxx_DFP" vendor="Microchip" version="1.8.184"/>
+        <pack name="PIC10-12Fxxx_DFP" vendor="Microchip" version="1.9.189"/>
       </packs>
       <ScriptingSettings>
       </ScriptingSettings>
@@ -112,8 +112,8 @@
         <property key="additional-options-trace-type" value=""/>
         <property key="additional-options-use-response-files" value="false"/>
         <property key="backup-reset-condition-flags" value="false"/>
-        <property key="calibrate-oscillator" value="false"/>
-        <property key="calibrate-oscillator-value" value="0x3400"/>
+        <property key="calibrate-oscillator" value="true"/>
+        <property key="calibrate-oscillator-value" value=""/>
         <property key="checksum-flash-options-addressce" value=""/>
         <property key="checksum-flash-options-addresscs" value=""/>
         <property key="checksum-flash-options-algorithmc"
