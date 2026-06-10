@@ -83,7 +83,7 @@ VDD (5V)
 3. スイッチを **長押し（1 秒以上）** すると設定時間確認モードになります。
    - LED が設定した分数の回数点滅して現在の設定を確認できます。
 4. タイマー計測中にスイッチを1 秒以上押すとタイマーをキャンセルできます。
-   - LED が約 3 秒間高速点滅してキャンセルを通知します。
+  - LED が約 2 秒間高速点滅してキャンセルを通知します。
 5. タイマーが完了すると、ブザーから完了メロディが流れます。
 
 ---
@@ -109,7 +109,7 @@ VDD (5V)
       │                   │         │
       │                   │         ▼
       │                   │    [タイマーキャンセル]
-      │                   │    LED 高速点滅（約 3 秒）
+      │                   │    LED 高速点滅（約 2 秒）
       │                   │         │
       │                   │         └──────────────────┐
       │                   │                             │
@@ -143,10 +143,12 @@ VDD (5V)
 
 | マクロ名 | 楽曲 |
 |---------|------|
+| `PLAY_NONE` | 無音（テスト用） |
+| `PLAY_TEST` | 音符・休符のテストパターン（テスト用） |
 | `RAMEN` | ラーメン完成！歓喜のチャルメラ |
 | `SEIJA` | 聖者の行進 |
 | `GAMEUP_RUSH` | ゲームアップ・ラッシュ |
-| `KITCHEN_RUSH` | キッチン・ラッシュ |
+| `KITCHEN_RUSH` | キッチン・ラッシュ（**現在の設定**） |
 | `COPILOT_ORIGINAL` | Copilot Original |
 | `GOOGLE_ORIGINAL` | GoogleAI Original |
 
@@ -167,8 +169,9 @@ play_music();
 
 ### テンポについて
 
-テンポは #define TMR_MUSIC_QUARTER を変更することで変更できます
-|TMR_MUSIC_QUARTER|テンポ(T=)|
+テンポは `#define TMR_MUSIC_QUARTER` を変更することで変更できます。
+
+| TMR_MUSIC_QUARTER | テンポ (T=) |
 |---|---|
 |250|120|
 |240|125|
@@ -194,16 +197,18 @@ play()呼び出し前にグローバル変数の play_length, play_length_scaler
 play_length 音符の長さを指定する。
 |play_length|設定値|説明|
 |---|---|---|
-|TMR_MUSIC_QUARTER|4分音符|初期値。設定不要|
-|TMR_MUSIC_EIGHTH|8分音符||
-|TMR_MUSIC_TRIPLET|3連符|1拍3連|
-|TMR_MUSIC_SIXTEENTH|16分音符||
+| TMR_MUSIC_QUARTER | 4分音符 | 初期値。設定不要 |
+| TMR_MUSIC_EIGHTH | 8分音符 | |
+| TMR_MUSIC_TRIPLET | 3連符 | 1拍3連 |
+| TMR_MUSIC_SIXTEENTH | 16分音符 | |
+| TMR_MUSIC_8TRIPLET | 3連符 | 半拍3連 |
 
-play_length_scaler: play_lengthで指定された長さのx倍する
+play_length_scaler: play_length で指定された長さの x 倍する。`TMR_MUSIC_PRESCALER` で初期値を設定（デフォルト: 1）。
 
 > **備考**  
 > - play_length は play() 内部で TMR_MUSIC_QUARTER が再設定される。
 > - 4分音符以外を連続で出力する場合は毎回 play_length を設定する。
+> - play_length_scaler は play() 内部でリセットされないため、変更した場合は手動で元に戻す必要がある。
 
 ### 音域・休符一覧
 
