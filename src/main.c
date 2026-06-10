@@ -87,9 +87,9 @@
 
 //#define PLAY_NONE
 //#define PLAY_TEST
-#define SEIJA                 // 聖者の行進(T=150)
+//#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
-//#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
+#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
 //#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
@@ -820,16 +820,9 @@ int main(void) {
     system_init();
 
     // スリープ解除ではない場合スリープする
-    if (!STATUSbits.GPWUF) {
+    // SWが押されていない状態なら再度スリープする
+    if (!STATUSbits.GPWUF || SW_PIN == 1) {
         goto go_sleep;
-    }
-
-    // チャタリング判定期間にボタンが離されたら再度スリープする
-    TMR0 = 0;
-    while (TMR0 < BUTTON_PRESS_DETECTION_TMR) {
-        if (SW_PIN == 1) {
-            goto go_sleep;
-        }
     }
 
     // LED点灯
@@ -872,6 +865,9 @@ int main(void) {
     // タイマー処理呼び出し
     if (timer_main(timer_seconds)) {
         // キャンセルされた場合
+
+        // LED ON
+        LED_PIN = 1;
 
         // ボタンが離されるまで待つ
         wait_button(1);
