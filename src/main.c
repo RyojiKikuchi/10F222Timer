@@ -223,7 +223,7 @@ static void wait_button(uint8_t status) {
  */
 static void flush_led(uint8_t loop) {
     while (loop--) {
-        LED_PIN = loop & 0x01U;
+        LED_PIN = ~LED_PIN;
         __delay_ms(50);
     }
 }
@@ -850,7 +850,7 @@ int main(void) {
     // ボタンが1秒以上押下されていた場合は設定時間分LEDを点滅させる
     wait_second();
     if (SW_PIN == 0) {
-        LED_PIN = 1;
+        LED_PIN = 0;
         wait_button(1);
         while (timer_minutes--) {
             LED_PIN = 1;
@@ -865,14 +865,17 @@ int main(void) {
     if (timer_main(timer_seconds)) {
         // キャンセルされた場合
 
-        // LED OFF
-        LED_PIN = 0;
+        // LED ON
+        LED_PIN = 1;
 
         // ボタンが離されるまで待つ
         wait_button(1);
 
         // LEDを2秒間点滅させる
         flush_led(40U);
+
+        // LED OFF
+        LED_PIN = 0;
 
         goto go_sleep;
 
