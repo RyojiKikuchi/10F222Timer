@@ -82,8 +82,9 @@
 //#define TMR_MUSIC_QUARTER       143U    // T=210
 //#define TMR_MUSIC_QUARTER       125U    // T=240
 #define TMR_MUSIC_EIGHTH        (uint8_t)(TMR_MUSIC_QUARTER / 2U)
-#define TMR_MUSIC_TRIPLET       (uint8_t)(TMR_MUSIC_QUARTER / 3U)    // 3連符用の長さ（4分音符を3等分）
+#define TMR_MUSIC_TRIPLET       (uint8_t)(TMR_MUSIC_QUARTER / 3U)    // 3連符（1拍3連）
 #define TMR_MUSIC_SIXTEENTH     (uint8_t)(TMR_MUSIC_QUARTER / 4U)
+#define TMR_MUSIC_8TRIPLET      (uint8_t)(TMR_MUSIC_QUARTER / 6U)    // 3連符（半拍3連）
 
 // プリスケーラー 2を設定すると音の長さが*2になりテンポが1/2になる
 // T=120より遅いテンポを設定する場合に使用する
