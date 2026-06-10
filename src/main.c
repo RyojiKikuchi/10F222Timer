@@ -819,8 +819,7 @@ int main(void) {
     // 初期化
     system_init();
 
-    // スリープ解除ではない場合スリープする
-    // SWが押されていない状態なら再度スリープする
+    // スリープ解除ではない場合、またはSWが押されていない場合はスリープする
     if (!STATUSbits.GPWUF || SW_PIN == 1) {
         goto go_sleep;
     }
@@ -851,7 +850,7 @@ int main(void) {
     // ボタンが1秒以上押下されていた場合は設定時間分LEDを点滅させる
     wait_second();
     if (SW_PIN == 0) {
-        LED_PIN = 0;
+        LED_PIN = 1;
         wait_button(1);
         while (timer_minutes--) {
             LED_PIN = 1;
@@ -866,8 +865,8 @@ int main(void) {
     if (timer_main(timer_seconds)) {
         // キャンセルされた場合
 
-        // LED ON
-        LED_PIN = 1;
+        // LED OFF
+        LED_PIN = 0;
 
         // ボタンが離されるまで待つ
         wait_button(1);
