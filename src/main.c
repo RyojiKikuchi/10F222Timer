@@ -53,6 +53,11 @@
 /* ボタンのチャタリング防止のため、ボタン押下判定するサイクル数 */
 #define BUTTON_PRESS_DETECTION_TMR  250U /* 8ms */
 
+#define SW_PUSH         0U
+#define SW_RELEASE      1U
+#define PIN_LOW         0U         
+#define PIN_HIGH        1U
+
 /* ============================================================
  *  Pin Define
  * ============================================================ */
@@ -195,7 +200,7 @@ static uint8_t wait_second() {
         // 32us * 250 = 8ms loop
         while (TMR0 < TMR_8MS_LOOP_COUNT);
         TMR0 = 0;
-        if (SW_PIN == 1) button = 0;
+        if (SW_PIN == SW_RELEASE) button = 0;
     }
 
     return button;
@@ -260,7 +265,7 @@ static uint8_t timer_main(uint16_t sec) {
 static void play(uint8_t key) {
 
     //　キャンセル済み判定
-    if (SW_PIN == 0) {
+    if (SW_PIN == SW_PUSH) {
         is_music_stop = 1;
     }
     if (is_music_stop) goto play_exit;
@@ -288,7 +293,7 @@ static void play(uint8_t key) {
                     if (key != 0xFFU && note_tmr >= key) {
                         note_tmr = 0;
                         BUZZER_PIN = ~BUZZER_PIN;
-                        LED_PIN = 1;
+                        LED_PIN = PIN_HIGH;
                     }
                 }
             }
@@ -299,8 +304,8 @@ play_exit:
     if (play_length_reset) {
         play_length = TMR_MUSIC_QUARTER;
     }
-    BUZZER_PIN = 0;
-    LED_PIN = 0;
+    BUZZER_PIN = PIN_LOW;
+    LED_PIN = PIN_LOW;
 }
 
 /* 
@@ -820,12 +825,12 @@ int main(void) {
     system_init();
 
     // スリープ解除ではない場合、またはSWが押されていない場合はスリープする
-    if (!STATUSbits.GPWUF || SW_PIN == 1) {
+    if (!STATUSbits.GPWUF || SW_PIN == SW_RELEASE) {
         goto go_sleep;
     }
 
     // LED点灯
-    LED_PIN = 1;
+    LED_PIN = PIN_HIGH;
 
     // AN0の電圧からタイマーの時間を取得
     adc_go();
@@ -849,13 +854,13 @@ int main(void) {
 
     // ボタンが1秒以上押下されていた場合は設定時間分LEDを点滅させる
     wait_second();
-    if (SW_PIN == 0) {
+    if (SW_PIN == SW_PUSH) {
         LED_PIN = 0;
         wait_button(1);
         while (timer_minutes--) {
-            LED_PIN = 1;
+            LED_PIN = PIN_HIGH;
             __delay_ms(200);
-            LED_PIN = 0;
+            LED_PIN = PIN_LOW;
             __delay_ms(200);
         }
         goto go_sleep;
@@ -866,16 +871,16 @@ int main(void) {
         // キャンセルされた場合
 
         // LED ON
-        LED_PIN = 1;
+        LED_PIN = PIN_HIGH;
 
         // ボタンが離されるまで待つ
-        wait_button(1);
+        wait_button(SW_RELEASE);
 
         // LEDを2秒間点滅させる
         flush_led(40U);
 
         // LED OFF
-        LED_PIN = 0;
+        LED_PIN = PIN_LOW;
 
         goto go_sleep;
 
@@ -891,7 +896,7 @@ go_sleep:
 
     // SLEEP前にGPIOの状態を取得するためにwait_buttonを呼び出す
     // SLEEP前のGPIO読込が目的のためコード削減のためプリスケーラ設定は戻さない
-    wait_button(1);
+    wait_button(SW_RELEASE);
 
     // スリープ
     // スリープ解除後はmain()の先頭から処理が行われる
@@ -903,3 +908,4 @@ go_sleep:
 
 }
 
+//wawawa
