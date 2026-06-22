@@ -224,28 +224,19 @@ static void wait_button(uint8_t status) {
 }
 
 /*
- * LEDを点滅させる
- * loop 1sec = 20
- */
-static void flush_led(uint8_t loop) {
-    while (loop--) {
-        LED_PIN = ~LED_PIN;
-        __delay_ms(50);
-    }
-}
-
-/*
  *  指定時間タイマー動作する
  *  途中キャンセルされた場合は 1。タイマー完了の場合は 0
  */
-static uint8_t timer_main(uint16_t sec) {
-    // (8000000 / 4) = 2000000 MHz = 0.5usec
-    // プリスケーラ 1:64 = 0.5 * 64 = 32us
-    while (sec--) {
-        LED_PIN = sec & 0x01U;
-        if (wait_second()) {
-            return 1;
+static uint8_t timer_main(uint8_t min) {
+    uint8_t sec = 59;
+    while (min--) {
+        while (sec--) {
+            LED_PIN = sec & 0x01U;
+            if (wait_second()) {
+                return 1;
+            }
         }
+        sec = 60;
     }
     return 0;
 }
@@ -837,27 +828,22 @@ int main(void) {
     adc_go();
 
     // 最初の1秒間は設定確認要にボタンが押し続けられているかチェックしているので、その一秒をのぞいた秒数を設定する。
-    uint16_t timer_seconds = 299U;
     uint8_t timer_minutes = 5U;
     if (ADRES <= 0x33U) {
-        timer_seconds = 59U;
         timer_minutes = 1U;
     } else if (ADRES <= 0x66U) {
-        timer_seconds = 119U;
         timer_minutes = 2U;
     } else if (ADRES <= 0x99U) {
-        timer_seconds = 179U;
         timer_minutes = 3U;
     } else if (ADRES <= 0xCCU) {
-        timer_seconds = 239U;
         timer_minutes = 4U;
     }
 
     // ボタンが1秒以上押下されていた場合は設定時間分LEDを点滅させる
     wait_second();
     if (SW_PIN == SW_PUSH) {
-        LED_PIN = 0;
-        wait_button(1);
+        LED_PIN = PIN_LOW;
+        wait_button(SW_RELEASE);
         while (timer_minutes--) {
             LED_PIN = PIN_HIGH;
             __delay_ms(200);
@@ -868,7 +854,7 @@ int main(void) {
     }
 
     // タイマー処理呼び出し
-    if (timer_main(timer_seconds)) {
+    if (timer_main(timer_minutes)) {
         // キャンセルされた場合
 
         // LED ON
@@ -878,7 +864,11 @@ int main(void) {
         wait_button(SW_RELEASE);
 
         // LEDを2秒間点滅させる
-        flush_led(40U);
+        for (uint8_t i = 0; i < 40; i++) {
+            LED_PIN = ~LED_PIN;
+            __delay_ms(50);
+        }
+
 
         // LED OFF
         LED_PIN = PIN_LOW;
@@ -908,5 +898,3 @@ go_sleep:
     return EXIT_SUCCESS;
 
 }
-
-//wawawa
