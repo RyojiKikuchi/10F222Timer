@@ -270,9 +270,8 @@ static void play(uint8_t key) {
     uint8_t prev_tmr = 0;
 
     while (scaler--) {
-        // 音符長ループ回数
-        uint8_t loop = play_length;
         // 音符長分のループ
+        uint8_t loop = play_length;
         while (loop--) {
             // 2ms分のループ
             TMR0 = 0;
@@ -294,7 +293,10 @@ static void play(uint8_t key) {
 
 play_exit:
     if (play_length_reset) {
-        play_length = TMR_MUSIC_QUARTER;
+        play_length = play_length_default;
+    }
+    if (play_length_scaler_reset) {
+        play_length_scaler = TMR_MUSIC_PRESCALER;
     }
     BUZZER_PIN = PIN_LOW;
     LED_PIN = PIN_LOW;
