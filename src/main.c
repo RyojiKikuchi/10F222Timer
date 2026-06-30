@@ -95,8 +95,8 @@
 //#define PLAY_TEST
 //#define SEIJA                 // 聖者の行進(T=150)
 //#define GAMEUP_RUSH           // ゲームアップ・ラッシュ(T=210)
-//#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
-#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
+#define KITCHEN_RUSH          // キッチン・ラッシュ(T=180)
+//#define RAMEN                 // ラーメン完成！歓喜のチャルメラ(T=150)
 //#define COPILOT_ORIGINAL      // Copilot Original(T=120)
 //#define GOOGLE_ORIGINAL       // GoogleAI Original(T=120)
 
@@ -170,9 +170,7 @@ static void system_init() {
 /* 1秒間WAIT
  * GP3が押され続けた場合は 1 を返却
  *  */
-static uint8_t wait_second() {
-
-    uint8_t button = 1;
+static void wait_second() {
 
     /* 
      * 8MHz / 4 = 2MHz = 0.5us
@@ -182,16 +180,12 @@ static uint8_t wait_second() {
      * 合計で 250 * 125 のループで 1sec となる
      */
     uint8_t loop = 125U;
-    TMR0 = 0;
     while (loop--) {
         // 8msecのループ
         // 32us * 250 = 8ms loop
-        while (TMR0 < TMR_8MS_LOOP_COUNT);
         TMR0 = 0;
-        if (SW_PIN == SW_RELEASE) button = 0;
+        while (TMR0 < TMR_8MS_LOOP_COUNT);
     }
-
-    return button;
 
 }
 
@@ -221,7 +215,8 @@ static uint8_t timer_main(uint8_t min) {
     while (min--) {
         while (sec--) {
             LED_PIN = sec & 0x01U;
-            if (wait_second()) {
+            wait_second();
+            if (SW_PIN == SW_PUSH) {
                 return 1;
             }
         }
@@ -818,7 +813,7 @@ int main(void) {
     // AN0の電圧からタイマーの時間を取得
     // ADC ON
     ADCON0bits.ADON = 1;
-    // アクイジションタイム(10us))
+    // アクイジションタイム(10us)
     __delay_us(10);
     // 変換開始
     ADCON0bits.GO = 1;
@@ -885,7 +880,7 @@ go_sleep:
     LED_PIN = PIN_LOW;
 
     // SLEEP前にGPIO読み出し
-    uint8_t dmy = GPIO;
+    (void)GPIO;
     
     // スリープ
     // スリープ解除後はmain()の先頭から処理が行われる
