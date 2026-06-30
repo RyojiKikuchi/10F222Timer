@@ -170,7 +170,9 @@ static void system_init() {
 /* 1秒間WAIT
  * GP3が押され続けた場合は 1 を返却
  *  */
-static void wait_second() {
+static uint8_t wait_second() {
+
+    uint8_t button = 1;
 
     /* 
      * 8MHz / 4 = 2MHz = 0.5us
@@ -180,12 +182,16 @@ static void wait_second() {
      * 合計で 250 * 125 のループで 1sec となる
      */
     uint8_t loop = 125U;
+    TMR0 = 0;
     while (loop--) {
         // 8msecのループ
         // 32us * 250 = 8ms loop
-        TMR0 = 0;
         while (TMR0 < TMR_8MS_LOOP_COUNT);
+        TMR0 = 0;
+        if (SW_PIN == SW_RELEASE) button = 0;
     }
+
+    return button;
 
 }
 
@@ -215,8 +221,7 @@ static uint8_t timer_main(uint8_t min) {
     while (min--) {
         while (sec--) {
             LED_PIN = sec & 0x01U;
-            wait_second();
-            if (SW_PIN == SW_PUSH) {
+            if (wait_second()) {
                 return 1;
             }
         }
