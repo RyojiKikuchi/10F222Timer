@@ -167,44 +167,26 @@ static void system_init() {
 
 }
 
-/* ADC読み取り */
-static void adc_go() {
-    // ADC ON
-    ADCON0bits.ADON = 1;
-    // アクイジションタイム(10us))
-    __delay_us(10);
-    // 変換開始
-    ADCON0bits.GO = 1;
-    // 変換終了wait
-    while (ADCON0bits.nDONE == 1);
-    // ADC OFF
-    ADCON0bits.ADON = 0;
-}
-
 /* 1秒間WAIT
  * GP3が押され続けた場合は 1 を返却
  *  */
-static uint8_t wait_second() {
-
-    uint8_t button = 1;
+static void wait_second() {
 
     /* 
      * 8MHz / 4 = 2MHz = 0.5us
      * プリスケーラ 1:64なので、TMR0は 0.5us * 64 = 32us 毎にカウントアップ
-     * 32us * 250 = 8000us = 8ms で250となる
-     * 8ms * 125 = 1000ms なので、125回のループで1secとなる
+     * 32us * 250 = 8000us = 8ms = 250回ループで8msとなる
+     * 8ms * 125 = 1000ms 
+     * 合計で 250 * 125 のループで 1sec となる
      */
     uint8_t loop = 125U;
-    TMR0 = 0;
     while (loop--) {
         // 8msecのループ
         // 32us * 250 = 8ms loop
-        while (TMR0 < TMR_8MS_LOOP_COUNT);
         TMR0 = 0;
-        if (SW_PIN == SW_RELEASE) button = 0;
+        while (TMR0 < TMR_8MS_LOOP_COUNT);
     }
 
-    return button;
 }
 
 /*
@@ -226,17 +208,19 @@ static void wait_button(uint8_t status) {
 /*
  *  指定時間タイマー動作する
  *  途中キャンセルされた場合は 1。タイマー完了の場合は 0
+ *  1秒はmain側で経過済みのため、最初は59秒とする。
  */
 static uint8_t timer_main(uint8_t min) {
-    uint8_t sec = 59;
+    uint8_t sec = 59U;
     while (min--) {
         while (sec--) {
             LED_PIN = sec & 0x01U;
-            if (wait_second()) {
+            wait_second();
+            if (SW_PIN == SW_PUSH) {
                 return 1;
             }
         }
-        sec = 60;
+        sec = 60U;
     }
     return 0;
 }
@@ -827,7 +811,16 @@ int main(void) {
     LED_PIN = PIN_HIGH;
 
     // AN0の電圧からタイマーの時間を取得
-    adc_go();
+    // ADC ON
+    ADCON0bits.ADON = 1;
+    // アクイジションタイム(10us)
+    __delay_us(10);
+    // 変換開始
+    ADCON0bits.GO = 1;
+    // 変換終了wait
+    while (ADCON0bits.nDONE == 1);
+    // ADC OFF
+    ADCON0bits.ADON = 0;
 
     // 最初の1秒間は設定確認要にボタンが押し続けられているかチェックしているので、その一秒をのぞいた秒数を設定する。
     uint8_t timer_minutes = 5U;
@@ -871,10 +864,6 @@ int main(void) {
             __delay_ms(50);
         }
 
-
-        // LED OFF
-        LED_PIN = PIN_LOW;
-
         goto go_sleep;
 
     }
@@ -887,10 +876,12 @@ int main(void) {
 
 go_sleep:
 
-    // SLEEP前にGPIOの状態を取得するためにwait_buttonを呼び出す
-    // SLEEP前のGPIO読込が目的のためコード削減のためプリスケーラ設定は戻さない
-    wait_button(SW_RELEASE);
+    // LED OFF
+    LED_PIN = PIN_LOW;
 
+    // SLEEP前にGPIO読み出し
+    (void)GPIO;
+    
     // スリープ
     // スリープ解除後はmain()の先頭から処理が行われる
     SLEEP();
