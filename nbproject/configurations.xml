@@ -17,11 +17,18 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <logicalFolder name="f1" displayName="song" projectFiles="true">
+        <itemPath>song/gameup_rush.c</itemPath>
+        <itemPath>song/kitchen_rush.c</itemPath>
+        <itemPath>song/music_skeleton.c</itemPath>
+        <itemPath>song/ramen.c</itemPath>
+      </logicalFolder>
       <itemPath>src/main.c</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
     <Elem>src</Elem>
+    <Elem>song</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -312,6 +319,14 @@
         <property key="user-pack-device-support" value=""/>
         <property key="wpo-lto" value="false"/>
       </XC8-config-global>
+      <item path="song/gameup_rush.c" ex="true" overriding="false">
+      </item>
+      <item path="song/kitchen_rush.c" ex="true" overriding="false">
+      </item>
+      <item path="song/music_skeleton.c" ex="true" overriding="false">
+      </item>
+      <item path="song/ramen.c" ex="true" overriding="false">
+      </item>
     </conf>
   </confs>
 </configurationDescriptor>
