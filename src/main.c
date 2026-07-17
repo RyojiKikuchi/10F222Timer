@@ -3,7 +3,7 @@
  * 1～5分計測するタイマー
  * 
  * GP0 ADC入力(analog)
- * GP1 ブザー(push pull)
+ * GP1 ブザー出力(push pull)
  * GP2 LED出力(push pull)
  * GP3 スイッチ入力(pull-up)
  * 
@@ -12,72 +12,7 @@
 /* ============================================================
  *  Include
  * ============================================================ */
-
-#include <xc.h>
-#include <stdint.h>
-#include <stdlib.h>
-
-/* ============================================================
- *  Configuration bits
- * ============================================================ */
-
-// CONFIG
-#pragma config IOSCFS = 8MHZ    // Internal Oscillator Frequency Select bit (8 MHz)
-#pragma config MCPU = ON        // Master Clear Pull-up Enable bit (Pull-up enabled)
-#pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled)
-#pragma config CP = ON          // Code protection bit (Code protection on)
-#pragma config MCLRE = OFF      // GP3/MCLR Pin Function Select bit (GP3/MCLR pin function is digital I/O, MCLR internally tied to VDD)
-
-/* ============================================================
- *  Clock Speed
- * ============================================================ */
-/* Clock 8MHz */
-#define _XTAL_FREQ  8000000UL
-
-// 本来は250だが、大きくずれる場合は調整する
-// 数字を減らすと時間が短くなる、増やすと長くなる。
-// 基本的には命令実行の分時間が伸びるので、値を減らして短くする方向に調整するハズ
-#define TMR_8MS_LOOP_COUNT  250U
-
-/* ============================================================
- *  Version
- * ============================================================ */
-
-/* version */
-#define VERSION_STRING   "1.10"
-
-/* ============================================================
- *  Construction
- * ============================================================ */
-
-/* ボタンのチャタリング防止のため、ボタン押下判定するサイクル数 */
-#define BUTTON_PRESS_DETECTION_TMR  250U /* 8ms */
-
-#define SW_PUSH         0U
-#define SW_RELEASE      1U
-#define PIN_LOW         0U         
-#define PIN_HIGH        1U
-
-/* ============================================================
- *  Pin Define
- * ============================================================ */
-
-#define BUZZER_PIN      GPIObits.GP1
-#define LED_PIN         GPIObits.GP2
-#define SW_PIN          GPIObits.GP3
-
-/* ============================================================
- *  Music Play
- * ============================================================ */
-
-#define TMR_MUSIC_2MS_LOOP_COUNT  250U    // プリスケーラ 1:16用
-
-uint8_t is_music_stop = 0;
-
-/* ============================================================
- *  prototype
- * ============================================================ */
-static void play(uint8_t);
+#include "main.h"
 
 /* ============================================================
  *  Song Include
@@ -186,6 +121,7 @@ static uint8_t timer_main(uint8_t min) {
         while (sec--) {
             LED_PIN = sec & 0x01U;
             wait_second();
+            // 1秒ごとにキャンセル判定する
             if (SW_PIN == SW_PUSH) {
                 return 1;
             }
@@ -210,10 +146,11 @@ static uint8_t timer_main(uint8_t min) {
  *  */
 static void play(uint8_t key) {
 
-    //　キャンセル済み判定
+    // キャンセル判定
     if (SW_PIN == SW_PUSH) {
         is_music_stop = 1;
     }
+    //　キャンセル済み判定
     if (is_music_stop) goto play_exit;
 
     // scaler設定
@@ -252,8 +189,7 @@ play_exit:
     if (play_length_scaler_reset) {
         play_length_scaler = TMR_MUSIC_PRESCALER;
     }
-    BUZZER_PIN = PIN_LOW;
-    LED_PIN = PIN_LOW;
+    GPIO = 0x00U;
 }
 
 /*
@@ -287,7 +223,7 @@ int main(void) {
     // ADC OFF
     ADCON0bits.ADON = 0;
 
-    // 最初の1秒間は設定確認要にボタンが押し続けられているかチェックしているので、その一秒をのぞいた秒数を設定する。
+    // ADCの値からタイマーの時間を決定する
     uint8_t timer_minutes = 5U;
     if (ADRES <= 0x33U) {
         timer_minutes = 1U;
@@ -299,11 +235,13 @@ int main(void) {
         timer_minutes = 4U;
     }
 
-    // ボタンが1秒以上押下されていた場合は設定時間分LEDを点滅させる
+    // 最初の1秒経過後にボタンが押されていた場合はタイマーの時間確認のため、設定時間をLEDの点滅で通知する
     wait_second();
     if (SW_PIN == SW_PUSH) {
+        // LEXを消灯してボタンが離されるまでwait
         LED_PIN = PIN_LOW;
         wait_button(SW_RELEASE);
+        // LEDを点滅させる
         while (timer_minutes--) {
             LED_PIN = PIN_HIGH;
             __delay_ms(200);
@@ -336,7 +274,7 @@ int main(void) {
     // プリスケーラを 1:16 に変更
     OPTION = 0b00000011;
 
-    // 音楽再生
+    // 音楽再生ｓ
     play_music();
 
 go_sleep:
