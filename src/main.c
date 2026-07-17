@@ -146,38 +146,32 @@ static uint8_t timer_main(uint8_t min) {
  *  */
 static void play(uint8_t key) {
 
-    // キャンセル判定
-    if (SW_PIN == SW_PUSH) {
-        is_music_stop = 1;
-    }
-    //　キャンセル済み判定
-    if (is_music_stop) goto play_exit;
-
     // scaler設定
     uint8_t scaler = play_length_scaler;
+
     // 半周期計測用
-    uint8_t note_tmr = 0;
-    // 前回タイマー値
-    uint8_t prev_tmr = 0;
+    uint8_t note_tmr = 0U;
 
     while (scaler--) {
+
         // 音符長分のループ
         uint8_t loop = play_length;
         while (loop--) {
+
             // 2ms分のループ
             TMR0 = 0;
             while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
+                uint8_t prev_tmr = TMR0;
                 // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
-                if (prev_tmr != TMR0) {
-                    prev_tmr = TMR0;
-                    note_tmr++;
-                    // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
-                    if (key != 0xFFU && note_tmr >= key) {
-                        note_tmr = 0;
-                        BUZZER_PIN = ~BUZZER_PIN;
-                        LED_PIN = PIN_HIGH;
-                    }
+                note_tmr++;
+                // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
+                if (key != 0xFFU && note_tmr >= key) {
+                    note_tmr = 0U;
+                    BUZZER_PIN = ~BUZZER_PIN;
+                    LED_PIN = PIN_HIGH;
                 }
+                // TMR0が更新するまでwait
+                while (prev_tmr == TMR0);
             }
         }
     }
