@@ -46,7 +46,7 @@ static uint8_t play_length_scaler_reset = 1;
 
 static void play_music() {
 
-    play(255);
+    play(NOTES_RESTS);
     
 }
 

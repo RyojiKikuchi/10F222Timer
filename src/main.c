@@ -162,16 +162,16 @@ static void play(uint8_t key) {
             TMR0 = 0;
             while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
                 uint8_t prev_tmr = TMR0;
-                // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
-                note_tmr++;
                 // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
-                if (key != 0xFFU && note_tmr >= key) {
+                if (key != NOTES_RESTS && note_tmr >= key) {
                     note_tmr = 0U;
                     BUZZER_PIN = ~BUZZER_PIN;
                     LED_PIN = PIN_HIGH;
                 }
                 // TMR0が更新するまでwait
                 while (prev_tmr == TMR0);
+                // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
+                note_tmr++;
             }
         }
     }
@@ -236,10 +236,9 @@ int main(void) {
         LED_PIN = PIN_LOW;
         wait_button(SW_RELEASE);
         // LEDを点滅させる
+        timer_minutes <<= 1;
         while (timer_minutes--) {
-            LED_PIN = PIN_HIGH;
-            __delay_ms(200);
-            LED_PIN = PIN_LOW;
+            LED_PIN = ~LED_PIN;
             __delay_ms(200);
         }
         goto go_sleep;
