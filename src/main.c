@@ -154,6 +154,7 @@ static void play(uint8_t key) {
     // 半周期計測用
     uint8_t note_tmr = 0U;
 
+    TMR0 = 0;
     while (scaler--) {
 
         // 音符長分のループ
@@ -161,7 +162,6 @@ static void play(uint8_t key) {
         while (loop--) {
 
             // 2ms分のループ
-            TMR0 = 0;
             while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
                 uint8_t prev_tmr = TMR0;
                 // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
@@ -179,6 +179,7 @@ static void play(uint8_t key) {
                 // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
                 note_tmr++;
             }
+            TMR0 = 0;
         }
     }
 
