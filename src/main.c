@@ -146,6 +146,8 @@ static uint8_t timer_main(uint8_t min) {
  *  */
 static void play(uint8_t key) {
 
+    if (is_music_stop) return;
+    
     // scaler設定
     uint8_t scaler = play_length_scaler;
 
@@ -168,6 +170,10 @@ static void play(uint8_t key) {
                     BUZZER_PIN = ~BUZZER_PIN;
                     LED_PIN = PIN_HIGH;
                 }
+                if (SW_PIN == SW_PUSH) {
+                    is_music_stop = 1;
+                    goto play_exit;
+                }                
                 // TMR0が更新するまでwait
                 while (prev_tmr == TMR0);
                 // TMR0が更新される毎に半周期計測用の note_tmr をインクリメントする
