@@ -75,8 +75,10 @@ static void system_init() {
 /* 1秒間WAIT
  * GP3が押され続けた場合は 1 を返却
  *  */
-static void wait_second() {
+static uint8_t wait_second() {
 
+    uint8_t sw_push = 1;
+    
     /* 
      * 8MHz / 4 = 2MHz = 0.5us
      * プリスケーラ 1:64なので、TMR0は 0.5us * 64 = 32us 毎にカウントアップ
@@ -90,15 +92,18 @@ static void wait_second() {
         // 32us * 250 = 8ms loop
         TMR0 = 0;
         while (TMR0 < TMR_8MS_LOOP_COUNT);
+        if (SW_PIN == SW_RELEASE) {
+            sw_push = 0;
+        }
     }
 
+    return sw_push;
+    
 }
 
 /*
  * ボタンの状態が変化するまでwait
  * GPIOはプルアップされているので、statusは
- *  0 push
- *  1 release
  * 
  *   */
 static void wait_button(uint8_t status) {
@@ -120,9 +125,8 @@ static uint8_t timer_main(uint8_t min) {
     while (min--) {
         while (sec--) {
             LED_PIN = sec & 0x01U;
-            wait_second();
-            // 1秒ごとにキャンセル判定する
-            if (SW_PIN == SW_PUSH) {
+            if (wait_second()) {
+                // キャンセルされた
                 return 1;
             }
         }
@@ -155,6 +159,7 @@ static void play(uint8_t key) {
     uint8_t note_tmr = 0U;
 
     TMR0 = 0;
+    // scalerのループ
     while (scaler--) {
 
         // 音符長分のループ
@@ -180,6 +185,7 @@ static void play(uint8_t key) {
                 note_tmr++;
             }
             TMR0 = 0;
+
         }
     }
 
@@ -198,8 +204,11 @@ play_exit:
  */
 int main(void) {
 
-    // 書込失敗で校正値が削除されてしまったので、過去のHEXファイルにあった値を設定
-    // OSCCAL = 0x22;
+    // クロック校正値をOSCCALに設定するオプションを有効化する
+    // ver6.30での設定
+    // XC8 Linker=>Runtime
+    //  Calibrate oscillator をチェック
+    //  Alternate oscillator calibration value をクリア
 
     // 初期化
     system_init();
