@@ -32,9 +32,9 @@ uint8_t v1, v2, v3, v4, v5, v6;
 /* ============================================================
  *  Song Include
  * ============================================================ */
-#include "..\song\music_skeleton.c"           // 
+//#include "..\song\music_skeleton.c"           // 
 //#include "..\song\gameup_rush.c"              //  Gameup Rush
-//#include "..\song\kitchen_rush.c"             //  Kitchen Rush
+#include "..\song\kitchen_rush.c"             //  Kitchen Rush
 //#include "..\song\ramen.c"                    //  ラーメン完成！歓喜のチャルメラ
 
 /* ============================================================
