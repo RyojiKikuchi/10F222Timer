@@ -128,12 +128,6 @@ extern "C" {
 #define NOTES_C8S   14U     // 　　 4464.286(4434.922)Hz
 
     // ♭系
-#define NOTES_B2F   NOTES_A2S
-#define NOTES_D3F   NOTES_C3S
-#define NOTES_E3F   NOTES_D3S
-#define NOTES_G3F   NOTES_F3S
-#define NOTES_A3F   NOTES_G3S
-#define NOTES_B3F   NOTES_A3S
 #define NOTES_D4F   NOTES_C4S
 #define NOTES_E4F   NOTES_D4S
 #define NOTES_G4F   NOTES_F4S
