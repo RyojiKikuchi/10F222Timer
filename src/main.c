@@ -545,7 +545,7 @@ int main(void) {
 
     // ADCの値からタイマーの時間を決定する
     
-#ifdef VOL_REVERSE
+#if VOL_REVERSE
 
     uint8_t timer_minutes = 1U;
     if (ADRES <= 0x33U) {
