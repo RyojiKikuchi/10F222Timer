@@ -486,10 +486,10 @@ static void delay(uint8_t loop) {
     asm("CLRF TMR0");
 
     asm("LOOPTMR0:");
-    // while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT); の判定
-    // SUBWF は「f - W」を行うため、WにTMR0を、fに_v3(250)を指定します
+    // while (TMR0 < _v3); の判定
+    // SUBWF は「f - W」を行うため、WにTMR0を、fに_v3(125)を指定します
     asm("MOVF TMR0, W");
-    asm("SUBWF _v3, W"); // W = _v3 - TMR0 (250 - TMR0)
+    asm("SUBWF _v3, W"); // W = _v3 - TMR0 (125 - TMR0)
 
     // _v3 - TMR0 の結果とZフラグの挙動：
     // TMR0 < _v3 のとき Z=0 → ループ継続
