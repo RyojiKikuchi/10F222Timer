@@ -19,14 +19,16 @@
  * ============================================================ */
 
 #define ASM
-#define DELAY_ASM
+
+#ifdef ASM
+
 #define WAIT_SECOND_ASM
 #define WAIT_BUTTON_ASM
 #define TIMER_MAIN_ASM
 #define PLAY_ASM
 
-#ifdef ASM
 uint8_t v1, v2, v3, v4, v5, v6;
+
 #endif
 
 /* ============================================================
@@ -545,21 +547,6 @@ int main(void) {
 
     // ADCの値からタイマーの時間を決定する
     
-#if VOL_REVERSE
-
-    uint8_t timer_minutes = 1U;
-    if (ADRES <= 0x33U) {
-        timer_minutes = 5U;
-    } else if (ADRES <= 0x66U) {
-        timer_minutes = 4U;
-    } else if (ADRES <= 0x99U) {
-        timer_minutes = 3U;
-    } else if (ADRES <= 0xCCU) {
-        timer_minutes = 2U;
-    }
-    
-#else
-
     uint8_t timer_minutes = 5U;
     if (ADRES <= 0x33U) {
         timer_minutes = 1U;
@@ -570,9 +557,12 @@ int main(void) {
     } else if (ADRES <= 0xCCU) {
         timer_minutes = 4U;
     }
+
+#if VOL_REVERSE
+
+    timer_minutes = 6 - timer_minutes;
     
 #endif
-    
 
     // 最初の1秒経過後にボタンが押されていた場合はタイマーの時間確認のため、設定時間をLEDの点滅で通知する
     wait_second();

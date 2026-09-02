@@ -61,10 +61,6 @@ extern "C" {
 #define PIN_LOW         0U         
 #define PIN_HIGH        1U
 
-#ifndef VOL_REVERSE
-#define VOL_REVERSE 0                       // ボリューム極性誤り対応
-#endif
-
     /* ============================================================
      *  Pin Define
      * ============================================================ */
