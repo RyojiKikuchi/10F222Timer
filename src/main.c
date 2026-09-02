@@ -544,6 +544,22 @@ int main(void) {
     ADCON0bits.ADON = 0;
 
     // ADCの値からタイマーの時間を決定する
+    
+#ifdef VOL_REVERSE
+
+    uint8_t timer_minutes = 1U;
+    if (ADRES <= 0x33U) {
+        timer_minutes = 5U;
+    } else if (ADRES <= 0x66U) {
+        timer_minutes = 4U;
+    } else if (ADRES <= 0x99U) {
+        timer_minutes = 3U;
+    } else if (ADRES <= 0xCCU) {
+        timer_minutes = 2U;
+    }
+    
+#else
+
     uint8_t timer_minutes = 5U;
     if (ADRES <= 0x33U) {
         timer_minutes = 1U;
@@ -554,6 +570,9 @@ int main(void) {
     } else if (ADRES <= 0xCCU) {
         timer_minutes = 4U;
     }
+    
+#endif
+    
 
     // 最初の1秒経過後にボタンが押されていた場合はタイマーの時間確認のため、設定時間をLEDの点滅で通知する
     wait_second();
