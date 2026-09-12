@@ -18,6 +18,8 @@
  *  For Assembler
  * ============================================================ */
 
+uint8_t v1, v2, v3;
+
 #define ASM
 
 #ifdef ASM
@@ -27,9 +29,15 @@
 #define TIMER_MAIN_ASM
 #define PLAY_ASM
 
-uint8_t v1, v2, v3, v4, v5, v6;
+uint8_t v4, v5, v6;
 
 #endif
+
+/* ============================================================
+ *  Variables
+ * ============================================================ */
+
+static uint8_t timer_minutes = 1U;
 
 /* ============================================================
  *  Song Include
@@ -158,7 +166,6 @@ static uint8_t wait_second() {
 
 /*
  * ボタンの状態が変化するまでwait
- * GPIOはプルアップされているので、statusは
  * 
  *   */
 static void wait_button(uint8_t status) {
@@ -464,7 +471,6 @@ play_exit:
     }
 }
 
-
 /* ============================================================
  *  delay
  *   100msのループを何回行うか指定
@@ -546,21 +552,41 @@ int main(void) {
     ADCON0bits.ADON = 0;
 
     // ADCの値からタイマーの時間を決定する
-    
-    uint8_t timer_minutes = 5U;
-    if (ADRES <= 0x33U) {
-        timer_minutes = 1U;
-    } else if (ADRES <= 0x66U) {
-        timer_minutes = 2U;
-    } else if (ADRES <= 0x99U) {
-        timer_minutes = 3U;
-    } else if (ADRES <= 0xCCU) {
-        timer_minutes = 4U;
-    }
 
+    // timer_minutes = 1;
+    // if (ADRES - 0x33 >= 0) timer_minutes++;
+    asm("MOVLW 0x33");
+    asm("SUBWF ADRES, W");      // ADRES - W
+    asm("BTFSC STATUS, 0");     // Cフラグ
+    asm("INCF _timer_minutes, F"); // _timer_minutes++
+    
+    // if (ADRES - 0x66 >= 0) timer_minutes++;
+    asm("MOVLW 0x66");
+    asm("SUBWF ADRES, W");      // ADRES - W
+    asm("BTFSC STATUS, 0");     // Cフラグ
+    asm("INCF _timer_minutes, F"); // _timer_minutes++
+
+    // if (ADRES - 0x99 >= 0) timer_minutes++;
+    asm("MOVLW 0x99");
+    asm("SUBWF ADRES, W");      // ADRES - W
+    asm("BTFSC STATUS, 0");     // Cフラグ
+    asm("INCF _timer_minutes, F"); // _timer_minutes++
+
+    // if (ADRES - 0xCC >= 0) timer_minutes++;
+    asm("MOVLW 0xCC");
+    asm("SUBWF ADRES, W");      // ADRES - W
+    asm("BTFSC STATUS, 0");     // Cフラグ
+    asm("INCF _timer_minutes, F"); // _timer_minutes++
+    
 #if VOL_REVERSE
 
-    timer_minutes = 6 - timer_minutes;
+    // PCB作成誤りで半固定抵抗の極性が誤っているため値を反転する
+    //timer_minutes = 6 - timer_minutes;
+    asm("MOVLW 6");
+    asm("MOVWF _v1");
+    asm("MOVF _timer_minutes, W");
+    asm("SUBWF _v1, W");
+    asm("MOVWF _timer_minutes");
     
 #endif
 
