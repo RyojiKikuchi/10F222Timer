@@ -218,21 +218,17 @@ static void wait_button(uint8_t status) {
  *  途中キャンセルされた場合は 1。タイマー完了の場合は 0
  *  1秒はmain側で経過済みのため、最初は59秒とする。
  */
-static uint8_t timer_main(uint8_t min) {
+static uint8_t timer_main(void) {
 
 #ifdef TIMER_MAIN_ASM
 
     // v1 ～ v3はwait_second内で使用している
     
-    // v4 1分計測
-    // v5 指定時間計測
+    // v4 指定時間計測
     
-    // v4 = min
-    asm("MOVWF _v4");
-
-    // v5 = 59
+    // v4 = 59
     asm("MOVLW 59");
-    asm("MOVWF _v5");
+    asm("MOVWF _v4");
 
     // 分のループ
     asm("TIMER_MIN_LOOP:");
@@ -252,15 +248,15 @@ static uint8_t timer_main(uint8_t min) {
     }
 
     // 秒減算
-    asm("DECFSZ _v5, F");
+    asm("DECFSZ _v4, F");
     asm("GOTO TIMER_SEC_LOOP");
 
-    // v5 = 60
+    // v4 = 60
     asm("MOVLW 60");
-    asm("MOVWF _v5");
+    asm("MOVWF _v4");
 
     // 分減算
-    asm("DECFSZ _v4, F");
+    asm("DECFSZ _timer_minutes, F");
     asm("GOTO TIMER_MIN_LOOP");
 
 #else
@@ -517,6 +513,12 @@ static void delay(uint8_t loop) {
 
 }
 
+static void check_adres(uint8_t v) {
+    asm("SUBWF ADRES, W");      // ADRES - W
+    asm("BTFSC STATUS, 0");     // Cフラグ
+    asm("INCF _timer_minutes, F"); // _timer_minutes++
+}
+
 /*
  * main
  */
@@ -555,28 +557,13 @@ int main(void) {
 
     // timer_minutes = 1;
     // if (ADRES - 0x33 >= 0) timer_minutes++;
-    asm("MOVLW 0x33");
-    asm("SUBWF ADRES, W");      // ADRES - W
-    asm("BTFSC STATUS, 0");     // Cフラグ
-    asm("INCF _timer_minutes, F"); // _timer_minutes++
-    
+    check_adres(0x33U);
     // if (ADRES - 0x66 >= 0) timer_minutes++;
-    asm("MOVLW 0x66");
-    asm("SUBWF ADRES, W");      // ADRES - W
-    asm("BTFSC STATUS, 0");     // Cフラグ
-    asm("INCF _timer_minutes, F"); // _timer_minutes++
-
+    check_adres(0x66U);
     // if (ADRES - 0x99 >= 0) timer_minutes++;
-    asm("MOVLW 0x99");
-    asm("SUBWF ADRES, W");      // ADRES - W
-    asm("BTFSC STATUS, 0");     // Cフラグ
-    asm("INCF _timer_minutes, F"); // _timer_minutes++
-
+    check_adres(0x99U);
     // if (ADRES - 0xCC >= 0) timer_minutes++;
-    asm("MOVLW 0xCC");
-    asm("SUBWF ADRES, W");      // ADRES - W
-    asm("BTFSC STATUS, 0");     // Cフラグ
-    asm("INCF _timer_minutes, F"); // _timer_minutes++
+    check_adres(0xCCU);
     
 #if VOL_REVERSE
 
@@ -608,7 +595,7 @@ int main(void) {
     } 
 
     // タイマー処理呼び出し
-    if (timer_main(timer_minutes)) {
+    if (timer_main()) {
         // キャンセルされた場合
 
         // LED ON
