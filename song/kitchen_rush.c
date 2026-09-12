@@ -43,35 +43,34 @@ static void play_music() {
         // フレーズ1：軽快な三連符風リズム (1オクターブ上げたC7-G6)
         for (i = 0; i < 4; i++) {
             play_length = TMR_MUSIC_EIGHTH;
-            play(30); // C7
-            play(40); // G6
-            play(30); // C7
-            play(255); // 8分休符
+            play(NOTES_C7);
+            play(NOTES_G6);
+            play(NOTES_C7);
+            play(NOTES_RESTS); // 8分休符
         }
 
         // フレーズ2：少し音程を上げて急かす (D7-A6)
         for (i = 0; i < 4; i++) {
             play_length = TMR_MUSIC_EIGHTH;
-            play(27); // D7
-            play(36); // A6
-            play(27); // D7
-            play(255); // 8分休符
+            play(NOTES_D7);
+            play(NOTES_A6);
+            play(NOTES_D7);
+            play(NOTES_RESTS); // 8分休符
         }
 
         // フレーズ3：最高音での警告音 (C8)
         for (i = 0; i < 8; i++) {
             play_length = TMR_MUSIC_SIXTEENTH;
-            play(15); // C8
-            play(255); // 16分休符
+            play(NOTES_C8);
+            play(NOTES_RESTS); // 16分休符
         }
     }
 
     // --- 締め：完了を知らせるチャイム
-    play(20); // G7
-    play(24); // E7
-    play(30); // C7
-    play(255); // 終了
+    play(NOTES_G7);
+    play(NOTES_E7);
+    play(NOTES_C7);
+    play(NOTES_RESTS); // 終了
 
 }
-
 
