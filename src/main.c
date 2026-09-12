@@ -607,9 +607,18 @@ int main(void) {
     // プリスケーラを 1:16 に変更
     OPTION = 0b00000011;
 
-    // 音楽再生ｓ
+    // 音楽再生
     play_music();
 
+    // プリスケーラを 1:64 に変更
+    OPTION = 0b00000101;
+
+    // 100ms wait
+    delay(1);
+
+    // ボタンが離されるまで待つ
+    wait_button(SW_RELEASE);
+    
 go_sleep:
 
     // LED OFF
