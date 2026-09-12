@@ -150,8 +150,7 @@ VDD (5V)
 ```c
 // プリスケーラを 1:16 に変更してから play_music() を呼び出す
 OPTION = 0b00000011;
-play(NOTES_C4);
-play(NOTES_RESTS);
+// Example note calls inside play_music(): play(NOTES_C4); play(NOTES_RESTS);
 play_music();
 ```
 
