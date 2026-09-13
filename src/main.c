@@ -20,8 +20,6 @@
 
 uint8_t v1, v2, v3;
 
-#define ASM
-
 #ifdef ASM
 
 #define WAIT_SECOND_ASM
@@ -513,9 +511,12 @@ static void delay(uint8_t loop) {
 
 }
 
+/*
+ * ADConverterの結果判定
+ */
 static void check_adres(uint8_t v) {
     asm("SUBWF ADRES, W");      // ADRES - W
-    asm("BTFSC STATUS, 0");     // Cフラグ
+    asm("BTFSC STATUS, 0");     // Cフラグ判定(ADRES - W) >= 0
     asm("INCF _timer_minutes, F"); // _timer_minutes++
 }
 
