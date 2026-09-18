@@ -18,7 +18,7 @@
  *  For Assembler
  * ============================================================ */
 
-uint8_t v1, v2, v3;
+static volatile uint8_t v1, v2, v3;
 
 #ifdef ASM
 
