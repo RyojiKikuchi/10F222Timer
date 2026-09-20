@@ -171,7 +171,7 @@ static void wait_button(uint8_t status) {
 #ifdef WAIT_BUTTON_ASM
 
     // statusをv2に待避
-    asm("MOVWF _v2");
+    v2 = status;
 
     v1 = BUTTON_PRESS_DETECTION_TMR;
 
@@ -305,9 +305,15 @@ static void play(uint8_t key) {
     // v5: 音符長のループ
     // v6: scalerのループ
 
+    // キャンセル済み
+    if (is_music_stop) return;
+
     // 引数(key)を待避。v2(loop)とv3にkey(待避用)を設定
-    asm("MOVWF _v2");
-    asm("MOVWF _v3");
+    v2 = key;
+    v3 = key;
+
+    // 2msループするカウンタ待避
+    v4 = TMR_MUSIC_2MS_LOOP_COUNT;
 
     // 8us計測用リセット
     asm("CLRF _v1");
@@ -320,14 +326,8 @@ static void play(uint8_t key) {
     asm("MOVWF GPIO");          // 0x06をGPIOに設定
     asm("PLAY_INIT_END:");
 
-    // キャンセル済み
-    if (is_music_stop) return;
-    
     // TMR0リセット
     asm("CLRF TMR0");
-
-    // 2msループするカウンタ待避
-    v4 = TMR_MUSIC_2MS_LOOP_COUNT;
 
     // スケーラーのループ回数を v6 にセット
     asm("MOVF _play_length_scaler, W");
