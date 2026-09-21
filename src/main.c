@@ -319,7 +319,8 @@ static void play(uint8_t key) {
     asm("CLRF _v1");
 
     // 音符の場合BUZZERとLEDをON
-    asm("XORLW 0xFF");          // key XOR 0xFF
+    asm("MOVF _v3, W");         // key => W
+    asm("XORLW 0xFF");          // W(key) XOR 0xFF
     asm("BTFSC STATUS, 2");     // Zフラグ判定
     asm("GOTO PLAY_INIT_END");  // ゼロならば(休符なら)終了
     asm("MOVLW 0x06");          // BUZZER(0x02),LED(0x04)をONにする
