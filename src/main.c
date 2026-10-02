@@ -28,9 +28,9 @@ static volatile uint8_t timer_minutes = 1U;
 /* ============================================================
  *  Song Include
  * ============================================================ */
-#include "..\song\music_skeleton.c"           // 
+//#include "..\song\music_skeleton.c"           // 
 //#include "..\song\gameup_rush.c"              //  Gameup Rush
-//#include "..\song\kitchen_rush.c"             //  Kitchen Rush
+#include "..\song\kitchen_rush.c"             //  Kitchen Rush
 //#include "..\song\ramen.c"                    //  ラーメン完成！歓喜のチャルメラ
 
 /* ============================================================
