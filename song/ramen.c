@@ -23,15 +23,15 @@
  *  Global
  * ============================================================ */
 // デフォルトの音符長
-static uint8_t play_length_default = TMR_MUSIC_QUARTER;
+static volatile uint8_t play_length_default = TMR_MUSIC_QUARTER;
 // 音符の初期値
-static uint8_t play_length = TMR_MUSIC_QUARTER;
+static volatile uint8_t play_length = TMR_MUSIC_QUARTER;
 // 発音毎に音符長をリセットする
-static uint8_t play_length_reset = 1;
+static volatile uint8_t play_length_reset = 1;
 // 音符の長さのscaler
-static uint8_t play_length_scaler = TMR_MUSIC_PRESCALER;
+static volatile uint8_t play_length_scaler = TMR_MUSIC_PRESCALER;
 // 発音毎にscalerをリセットする
-static uint8_t play_length_scaler_reset = 1;
+static volatile uint8_t play_length_scaler_reset = 1;
 
 static void play_music() {
 
