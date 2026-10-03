@@ -233,35 +233,38 @@ static void play(uint8_t key) {
 
     // キャンセル済み
     if (is_music_stop) return;
-
+    
     // 引数(key)を待避。
     //   v2:半周期となるTMR0値-1を待避(後段でデクリメント)
     //   v3:前回のTMR0の値
-    v2 = key; // 半周期となる値
-    v3 = 0;
+    //   後続処理で (TMR0 - v3) > v2を判定するため、v2を-1しておく
+    v2 = key -1;   // 半周期となる値
+    v3 = v2;
 
     // 2msループするカウンタ待避
     //   v1:2msとなるTMR0値-1を待避
     //   v4:前回のTMR0の値
+    //   後続処理で (TMR0 - v4) > v1を判定するため、v1を-1しておく
     v1 = TMR_MUSIC_2MS_LOOP_COUNT - 1;
-    v4 = 0;
+    v4 = v1; 
 
     // スケーラーのループ回数を v6 にセット
     v6 = play_length_scaler;
 
     // 音符の場合BUZZERとLEDをON
-    asm("MOVF _v2, W"); // key => W
-    asm("XORLW 0xFF"); // key XOR 0xFF
-    asm("BTFSC STATUS, 2"); // Zフラグ判定
-    asm("GOTO PLAY_INIT_END"); // ゼロならば(休符なら)終了
-    asm("MOVLW 0x06"); // BUZZER(0x02),LED(0x04)をONにする
-    asm("MOVWF GPIO"); // 0x06をGPIOに設定
+    asm("MOVF _v2, W");         // key => W
+    asm("XORLW 0xFE");          // key XOR 0xFE
+    asm("BTFSC STATUS, 2");     // Zフラグ判定
+    asm("GOTO PLAY_INIT_END");  // ゼロならば(休符なら)終了
+    asm("MOVLW 0x06");          // BUZZER(0x02),LED(0x04)をONにする
+    asm("MOVWF GPIO");          // 0x06をGPIOに設定
     asm("PLAY_INIT_END:");
-    asm("DECF _v2, F"); // v2デクリメント
-
-    // TMR0初期化
-    asm("CLRF TMR0");
-
+    
+    // v3(半周期計測),v4(2ms計測)初期値設定
+    asm("MOVF TMR0, W");
+    asm("MOVWF _v3");
+    asm("MOVWF _v4");
+    
     // scaler用のループ先頭
     asm("SCALER_LOOP_START:");
 
@@ -276,21 +279,21 @@ static void play(uint8_t key) {
     asm("NOTE_2MS_LOOP_START:");
 
     // TMR0の値が半周期後の値になったらBUZZERの切替を行う
-    asm("MOVF _v3, W"); // v3 => W
-    asm("SUBWF TMR0, W"); // TMR0 - W
-    asm("SUBWF _v2, W"); // (key - 1) - W)
-    asm("BTFSC STATUS, 0"); // Cフラグ判定
-    asm("GOTO NOTE_LOOP_BREAK"); // ループ継続
+    asm("MOVF _v3, W");             // v3 => W
+    asm("SUBWF TMR0, W");           // TMR0 - W
+    asm("SUBWF _v2, W");            // (TMR0 - v3) - v2 > 0
+    asm("BTFSC STATUS, 0");         // Cフラグ判定
+    asm("GOTO NOTE_LOOP_BREAK");    // ループ継続
+
+    // v3設定。v3 +=  key
+    asm("MOVF _v2, W");
+    asm("ADDWF _v3, F");
 
     // 半周期経過時の処理
 
-    // v3にTMR0を待避
-    asm("MOVF TMR0, W");
-    asm("MOVWF _v3");
-
     // 休符(LED OFF)のチェック
-    asm("BTFSS GPIO, 2"); // LEDの状態チェック
-    asm("GOTO NOTE_LOOP_BREAK"); // 休符ならNOTE_LOOP_BREAKへ
+    asm("BTFSS GPIO, 2");           // LEDの状態チェック
+    asm("GOTO NOTE_LOOP_BREAK");    // 休符ならNOTE_LOOP_BREAKへ
 
     // BUZZER(GP1)を反転(XOR)
     asm("MOVF GPIO, W");
@@ -302,26 +305,27 @@ static void play(uint8_t key) {
     // キャンセル処理
     asm("BTFSS GPIO, 3");
     asm("GOTO PLAY_CANCEL");
-
+    
     // 2ms経過したかチェック
     // TMR0 - v4(前回のタイマー値) が 250以上ならループ終了
-    asm("MOVF _v4, W"); // v4 => W
-    asm("SUBWF TMR0, W"); // TMR0 - W
-    asm("SUBWF _v1, W"); // (TMR_MUSIC_2MS_LOOP_COUNT - 1) - W)
-    asm("BTFSC STATUS, 0"); // Cフラグ判定
+    asm("MOVF _v4, W");                 // v4 => W
+    asm("SUBWF TMR0, W");               // TMR0 - W
+    asm("SUBWF _v1, W");                // (TMR0 - v4) - v1 > 0
+    asm("BTFSC STATUS, 0");             // Cフラグ判定
     // 2msのループ先頭に戻る
-    asm("GOTO NOTE_2MS_LOOP_START"); // ループ継続
-    // TMR0の値をv4に設定
-    asm("MOVF TMR0, W");
-    asm("MOVWF _v4");
+    asm("GOTO NOTE_2MS_LOOP_START");    // ループ継続
+
+    // v4設定。v4 += TMR_MUSIC_2MS_LOOP_COUNT
+    asm("MOVF _v1, W");
+    asm("ADDWF _v4, F");
 
     // 音符長(v5)のデクリメント＆ループ終了判定
     asm("DECFSZ _v5, F");
-    asm("GOTO NOTE_LOOP_START"); // 0にならなかったら音符長ループ継続
+    asm("GOTO NOTE_LOOP_START");        // 0にならなかったら音符長ループ継続
 
     // scaler(v6)のデクリメント＆ループ終了判定)
     asm("DECFSZ _v6, F");
-    asm("GOTO SCALER_LOOP_START"); // 0にならなかったらscalerのループ継続
+    asm("GOTO SCALER_LOOP_START");      // 0にならなかったらscalerのループ継続
 
     asm("GOTO PLAY_EXIT");
 
@@ -329,7 +333,7 @@ static void play(uint8_t key) {
     asm("INCF _is_music_stop");
 
     asm("PLAY_EXIT:");
-
+    
 /*
     // 半周期計測用
     uint8_t note_tmr = key;
@@ -370,7 +374,7 @@ static void play(uint8_t key) {
         }
 
     }
-*/
+*/    
 
 play_exit:
     GPIO = 0x00U;
