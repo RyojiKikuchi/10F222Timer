@@ -288,6 +288,7 @@ static void play(uint8_t key) {
     // v3設定。v3 +=  key
     asm("MOVF _v2, W");
     asm("ADDWF _v3, F");
+    asm("INCF _v3, F");
 
     // 半周期経過時の処理
 
@@ -318,6 +319,7 @@ static void play(uint8_t key) {
     // v4設定。v4 += TMR_MUSIC_2MS_LOOP_COUNT
     asm("MOVF _v1, W");
     asm("ADDWF _v4, F");
+    asm("INCF _v4, F");
 
     // 音符長(v5)のデクリメント＆ループ終了判定
     asm("DECFSZ _v5, F");
