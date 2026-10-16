@@ -92,6 +92,8 @@ static uint8_t wait_second(uint8_t beep) {
     // v2: 1sec計測(125);
     // v3: ボタンチェック
     // v4: 8ms計測用
+    // v5: beep間隔
+    // v7: beep間隔計測
 
 
     v1 = TMR_8MS_LOOP_COUNT - 1;
