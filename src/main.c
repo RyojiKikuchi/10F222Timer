@@ -220,7 +220,7 @@ static uint8_t timer_main() {
 
     // 一秒wait
     if (v6 == 60) {
-        if (wait_second(10)) {
+        if (wait_second(6 + timer_minutes)) {
             // キャンセルされた
             return 1;
         }
