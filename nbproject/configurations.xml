@@ -23,6 +23,7 @@
         <itemPath>song/kitchen_rush.c</itemPath>
         <itemPath>song/music_skeleton.c</itemPath>
         <itemPath>song/ramen.c</itemPath>
+        <itemPath>song/play_music.h</itemPath>
       </logicalFolder>
       <itemPath>src/main.c</itemPath>
     </logicalFolder>

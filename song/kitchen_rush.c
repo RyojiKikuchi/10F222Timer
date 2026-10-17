@@ -1,23 +1,24 @@
 /*
  * Kitchen Rush
  * T=180
- * TMR_MUSIC_QUARTER    166U
- * TMR_MUSIC_PRESCALER  1U
  */
 
 /* ============================================================
  *  Const
  * ============================================================ */
-#define TMR_MUSIC_QUARTER       166U    // T=180
 
-// プリスケーラー 2を設定すると音の長さが*2になりテンポが1/2になる
-// T=120より遅いテンポを設定する場合に使用する
-#define TMR_MUSIC_PRESCALER     1U
+#define MUSIC_TEMPO             180
 
-#define TMR_MUSIC_EIGHTH        (uint8_t)(TMR_MUSIC_QUARTER / 2U)    // 8分音符
-#define TMR_MUSIC_TRIPLET       (uint8_t)(TMR_MUSIC_QUARTER / 3U)    // 3連符（1拍3連）
-#define TMR_MUSIC_SIXTEENTH     (uint8_t)(TMR_MUSIC_QUARTER / 4U)    // 16分音符
-#define TMR_MUSIC_8TRIPLET      (uint8_t)(TMR_MUSIC_QUARTER / 6U)    // 3連符（半拍3連）
+#include "play_music.h"
+// TMR_MUSIC_QUARTER       4分音符
+// TMR_MUSIC_EIGHTH        8分音符
+// TMR_MUSIC_TRIPLET       3連符（1拍3連）
+// TMR_MUSIC_SIXTEENTH     16分音符
+// TMR_MUSIC_8TRIPLET      3連符（半拍3連）
+
+// TMR_MUSIC_PRESCALER     T=120-   1
+//                         T=60-119 2
+//                         T=30-59  4
 
 /* ============================================================
  *  Global
