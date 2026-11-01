@@ -46,7 +46,7 @@
         <platform>3</platform>
       </toolsSet>
       <packs>
-        <pack name="PIC10-12Fxxx_DFP" vendor="Microchip" version="1.9.189"/>
+        <pack name="PIC10-12Fxxx_DFP" vendor="Microchip" version="1.10.193"/>
       </packs>
       <ScriptingSettings>
       </ScriptingSettings>
@@ -81,7 +81,7 @@
         <property key="call-prologues" value="false"/>
         <property key="default-bitfield-type" value="true"/>
         <property key="default-char-type" value="true"/>
-        <property key="define-macros" value="VOL_REVERSE;ASM"/>
+        <property key="define-macros" value="VOL_REVERSE_X;ASM;PLAY_ASM;BUZZER_BTL"/>
         <property key="disable-optimizations" value="false"/>
         <property key="extra-include-directories" value=""/>
         <property key="favor-optimization-for" value="-speed,+space"/>

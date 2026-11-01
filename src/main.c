@@ -30,13 +30,13 @@ static volatile uint8_t timer_minutes = 1U;
  * ============================================================ */
 //#include "..\song\music_skeleton.c"           // 
 //#include "..\song\gameup_rush.c"              //  Gameup Rush
-#include "..\song\kitchen_rush.c"             //  Kitchen Rush
-//#include "..\song\ramen.c"                    //  ラーメン完成！歓喜のチャルメラ
+//#include "..\song\kitchen_rush.c"             //  Kitchen Rush
+#include "..\song\ramen.c"                    //  ラーメン完成！歓喜のチャルメラ
 
 /* ============================================================
  *  システム初期化
  * ============================================================ */
-static void system_init() {
+static void system_init(void) {
 
     /*
      *  GP2へのクロック出力 0 disabled (GPIOとして利用)
@@ -103,8 +103,22 @@ static uint8_t wait_second(uint8_t beep) {
     v5 = beep;
     v7 = 0;
 
-    // 1secループ先頭
     asm("CLRF TMR0");
+
+#ifdef BUZZER_BTL
+    
+    // BUZZERピン設定
+    // beep != 0 ならBUZZER_PINの状態をLED_PINの逆を設定
+    asm("MOVF _v5, F");
+    asm("BTFSC STATUS, 2");
+    asm("GOTO LOOP_1SEC_BEGIN");    
+    
+    asm("BTFSS GPIO, 2");       // LEDピンの状態判定
+    asm("BSF GPIO, 1");         // LEDがOFFならBUZZERをON
+    
+#endif
+    
+    // 1secループ先頭
     asm("LOOP_1SEC_BEGIN:");
     asm("LOOP_8MS_BEGIN:");
 
@@ -123,7 +137,13 @@ static uint8_t wait_second(uint8_t beep) {
 
     // BUZZER切替
     asm("MOVF GPIO, W");
+#ifdef BUZZER_BTL
+    // BUZZERとLEDを反転(XOR))
+    asm("XORLW 0x06");
+#else
+    // BUZZER(GP1)を反転(XOR)
     asm("XORLW 0x02");
+#endif
     asm("MOVWF GPIO");
 
     asm("MOVF _v5, W");
@@ -199,7 +219,7 @@ static void wait_button(uint8_t status) {
  *  途中キャンセルされた場合は 1。タイマー完了の場合は 0
  *  1秒はmain側で経過済みのため、最初は59秒とする。
  */
-static uint8_t timer_main() {
+static uint8_t timer_main(void) {
 
     // v1 ～ v5はwait_second内で使用している
     // v6 指定時間計測
@@ -259,8 +279,14 @@ static uint8_t timer_main() {
  * 
  *  key = 255 は休符
  * 
- *  */
+ *  
+ */
 static void play(uint8_t key) {
+
+    // キャンセル済み
+    if (is_music_stop) return;
+
+#ifdef PLAY_ASM
 
     // Cだとループ内の処理がTMR0カウントアップの8usに間に間に合わず、
     // 半周期の計測が遅れて周期が延びてしまう。
@@ -272,9 +298,7 @@ static void play(uint8_t key) {
     // v4: 2ms計測
     // v5: 音符長のループ
     // v6: scalerのループ
-
-    // キャンセル済み
-    if (is_music_stop) return;
+    // v7: 音符・休符判定 0:休符, 1:音符
 
     // 引数(key)を待避。
     //   v2:半周期となるTMR0値-1を待避(後段でデクリメント)
@@ -293,13 +317,19 @@ static void play(uint8_t key) {
     // スケーラーのループ回数を v6 にセット
     v6 = play_length_scaler;
 
+    // 音符・休符
+    v7 = 0;
+
     // 音符の場合BUZZERとLEDをON
     asm("MOVF _v2, W"); // key => W
     asm("XORLW 0xFE"); // key XOR 0xFE
     asm("BTFSC STATUS, 2"); // Zフラグ判定
     asm("GOTO PLAY_INIT_END"); // ゼロならば(休符なら)終了
-    asm("MOVLW 0x06"); // BUZZER(0x02),LED(0x04)をONにする
-    asm("MOVWF GPIO"); // 0x06をGPIOに設定
+    asm("BSF _v7, 0"); // v7をセット
+    asm("BSF GPIO, 1"); // BUZZERをON
+#ifndef BUZZER_BTL              // BTL未使用の場合
+    asm("BSF GPIO, 2"); // LEDをON
+#endif
     asm("PLAY_INIT_END:");
 
     // v3(半周期計測),v4(2ms計測)初期値設定
@@ -334,13 +364,17 @@ static void play(uint8_t key) {
 
     // 半周期経過時の処理
 
-    // 休符(LED OFF)のチェック
-    asm("BTFSS GPIO, 2"); // LEDの状態チェック
+    // 休符(v7)のチェック
+    asm("BTFSS _v7, 0"); // v7の状態チェック
     asm("GOTO NOTE_LOOP_BREAK"); // 休符ならNOTE_LOOP_BREAKへ
-
-    // BUZZER(GP1)を反転(XOR)
     asm("MOVF GPIO, W");
+#ifdef BUZZER_BTL
+    // BUZZERとLEDを反転(XOR))
+    asm("XORLW 0x06");
+#else
+    // BUZZER(GP1)を反転(XOR)
     asm("XORLW 0x02");
+#endif
     asm("MOVWF GPIO");
 
     asm("NOTE_LOOP_BREAK:");
@@ -378,47 +412,65 @@ static void play(uint8_t key) {
 
     asm("PLAY_EXIT:");
 
-    /*
-        // 半周期計測用
-        uint8_t note_tmr = key;
-        uint8_t prev_tmr = 0;
+#else
 
-        // scaler設定
-        uint8_t scaler = play_length_scaler;
+    // 半周期計測用
+    uint8_t note_tmr = key;
+    uint8_t prev_tmr = 0;
 
-        TMR0 = 0;
-        // scalerのループ
-        while (scaler--) {
+    // scaler設定
+    v6 = play_length_scaler;
 
-            // 音符長分のループ
-            uint8_t loop = play_length;
-            while (loop--) {
+    if (key != NOTES_RESTS) {
+        BUZZER_PIN = PIN_HIGH;
+#ifndef BUZZER_BTL
+        LED_PIN = PIN_HIGH;
+#endif
+    }
 
-                // 2ms分のループ
-                while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
 
-                    // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
-                    // 処理が間に合わずにnote_tmrがデクリメントされたときにTMR0が2進むことがある
-                    // そのため周期が延びて音程がずれる＆音が濁る
-                    if (key != NOTES_RESTS && !--note_tmr) {
-                        note_tmr = key;
-                        BUZZER_PIN = ~BUZZER_PIN;
-                        LED_PIN = PIN_HIGH;
-                    }
+    TMR0 = 0;
+    // scalerのループ
+    while (v6--) {
 
-                    // TMR0が更新するまでwait
-                    while (prev_tmr == TMR0);
-                    prev_tmr = TMR0;
+        // 音符長分のループ
+        uint8_t loop = play_length;
+        while (loop--) {
 
+            // 2ms分のループ
+            while (TMR0 < TMR_MUSIC_2MS_LOOP_COUNT) {
+
+                // 半周期たったらBUZZERの状態を反転させて note_tmr を初期化する
+                // 処理が間に合わずにnote_tmrがデクリメントされたときにTMR0が2進むことがある
+                // そのため周期が延びて音程がずれる＆音が濁る
+                if (key != NOTES_RESTS && !--note_tmr) {
+                    note_tmr = key;
+#ifdef BUZZER_BTL
+                    GPIO ^= 0x06;
+#else
+                    GPIO ^= 0x02;
+#endif
                 }
 
-                TMR0 = 0;
-                prev_tmr = 0;
+                // TMR0が更新するまでwait
+                while (prev_tmr == TMR0);
+                prev_tmr = TMR0;
 
             }
 
+            if (SW_PIN == SW_PUSH) {
+                is_music_stop = 1;
+                goto play_exit;
+            }
+
+            TMR0 = 0;
+            prev_tmr = 0;
+
         }
-     */
+
+    }
+
+#endif
 
 play_exit:
     GPIO = 0x00U;
