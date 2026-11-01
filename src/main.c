@@ -647,6 +647,9 @@ int main(void) {
         asm("GOTO GO_SLEEP");
     }
 
+    // GPIO初期化
+    asm("CLRF GPIO");
+
     // プリスケーラを 1:16 に変更
     OPTION = 0b00000011;
 
