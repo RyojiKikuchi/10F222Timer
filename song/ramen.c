@@ -7,6 +7,7 @@
  *  Const
  * ============================================================ */
 
+// テンポ設定 T=30以上を設定
 #define MUSIC_TEMPO             150
 
 #include "play_music.h"
@@ -40,81 +41,81 @@ static void play_music() {
     // 合計 60音
 
     // --- 導入：チャルメラ・オマージュ ---
-    play(142); // A4
-    play(127); // B4
-    play(113); // C#5 (少し外したチャルメラ風)
-    play(127); // B4
-    play(142); // A4
-    play(255); // 休符
-    play(142); // A4
-    play(127); // B4
-    play(113); // C#5
-    play(127); // B4
-    play(142); // A4
-    play(127); // B4
-    play(255); // 休符
+    play(NOTES_A4); // A4
+    play(NOTES_B4); // B4
+    play_length_scaler = MUSIC_SCALER_2X;
+    play(NOTES_C5S); // C#5 (少し外したチャルメラ風)
+    play(NOTES_B4); // B4
+    play(NOTES_A4); // A4
+    play(NOTES_RESTS); // 休符
+    play(NOTES_A4); // A4
+    play(NOTES_B4); // B4
+    play(NOTES_C5S); // C#5
+    play(NOTES_B4); // B4
+    play(NOTES_A4); // A4
+    play_length_scaler = MUSIC_SCALER_2X;
+    play(NOTES_B4); // B4
+    play(NOTES_RESTS); // 休符
 
     // --- 期待感：音階が上がっていく ---
-    play(119); // C5
-    play(106); // D5
-    play(95); // E5
-    play(80); // G5
-    play(119); // C5
-    play(106); // D5
-    play(95); // E5
-    play(80); // G5
+    play(NOTES_C5); // C5
+    play(NOTES_D5); // D5
+    play(NOTES_E5); // E5
+    play(NOTES_G5); // G5
+    play(NOTES_C5); // C5
+    play(NOTES_D5); // D5
+    play(NOTES_E5); // E5
+    play(NOTES_G5); // G5
 
     // --- メイン：喜びのメロディ（歓喜の歌風） ---
-    play(95); // E5
-    play(95); // E5
-    play(89); // F5
-    play(80); // G5
-    play(80); // G5
-    play(89); // F5
-    play(95); // E5
-    play(106); // D5
-    play(119); // C5
-    play(119); // C5
-    play(106); // D5
-    play(95); // E5
-    play(95); // E5
+    play(NOTES_E5); // E5
+    play(NOTES_E5); // E5
+    play(NOTES_F5); // F5
+    play(NOTES_G5); // G5
+    play(NOTES_G5); // G5
+    play(NOTES_F5); // F5
+    play(NOTES_E5); // E5
+    play(NOTES_D5); // D5
+    play(NOTES_C5); // C5
+    play(NOTES_C5); // C5
+    play(NOTES_D5); // D5
+    play(NOTES_E5); // E5
+    play(NOTES_E5); // E5
     play_length = TMR_MUSIC_EIGHTH;
-    play(255); // 休符(短)
-    play(106); // D5
-    play(106); // D5
-    play(255); // 休符
+    play(NOTES_RESTS); // 休符(短)
+    play(NOTES_D5); // D5
+    play(NOTES_D5); // D5
+    play(NOTES_RESTS); // 休符
 
-    play(95); // E5
-    play(95); // E5
-    play(89); // F5
-    play(80); // G5
-    play(80); // G5
-    play(89); // F5
-    play(95); // E5
-    play(106); // D5
-    play(119); // C5
-    play(119); // C5
-    play(106); // D5
-    play(95); // E5
-    play(106); // D5
+    play(NOTES_E5); // E5
+    play(NOTES_E5); // E5
+    play(NOTES_F5); // F5
+    play(NOTES_G5); // G5
+    play(NOTES_G5); // G5
+    play(NOTES_F5); // F5
+    play(NOTES_E5); // E5
+    play(NOTES_D5); // D5
+    play(NOTES_C5); // C5
+    play(NOTES_C5); // C5
+    play(NOTES_D5); // D5
+    play(NOTES_E5); // E5
+    play(NOTES_D5); // D5
     play_length = TMR_MUSIC_EIGHTH;
-    play(255); // 休符(短)
-    play(119); // C5
-    play(119); // C5
-    play(255); // 休符
+    play(NOTES_RESTS); // 休符(短)
+    play(NOTES_C5); // C5
+    play(NOTES_C5); // C5
+    play(NOTES_RESTS); // 休符
 
     // --- フィナーレ：高らかに終了 ---
-    play(80); // G5
-    play(60); // C6
-    play(47); // E6
-    play(40); // G6
-    play(30); // C7
-    play(255); // 休符
-    play(30); // C7
-    play(255); // 休符
-    play(30); // C7
-    play(30); // C7
+    play(NOTES_G5); // G5
+    play(NOTES_C6); // C6
+    play(NOTES_E6); // E6
+    play(NOTES_G6); // G6
+    play(NOTES_C7); // C7
+    play(NOTES_RESTS); // 休符
+    play(NOTES_C7); // C7
+    play(NOTES_RESTS); // 休符
+    play(NOTES_C7); // C7
+    play(NOTES_C7); // C7
     
 }
-
-
