@@ -40,7 +40,7 @@
         <targetDevice>PIC10F222</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>PK5Tool</platformTool>
+        <platformTool>noID</platformTool>
         <languageToolchain>XC8</languageToolchain>
         <languageToolchainVersion>3.10</languageToolchainVersion>
         <platform>3</platform>
@@ -81,7 +81,7 @@
         <property key="call-prologues" value="false"/>
         <property key="default-bitfield-type" value="true"/>
         <property key="default-char-type" value="true"/>
-        <property key="define-macros" value="VOL_REVERSE_X;ASM;PLAY_ASM;BUZZER_BTL"/>
+        <property key="define-macros" value="VOL_REVERSE_X;PLAY_ASM;BUZZER_BTL"/>
         <property key="disable-optimizations" value="false"/>
         <property key="extra-include-directories" value=""/>
         <property key="favor-optimization-for" value="-speed,+space"/>

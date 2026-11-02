@@ -7,6 +7,10 @@
  * GP2 LED出力(push pull)
  * GP3 スイッチ入力(pull-up)
  * 
+ *  * define macros
+ *  PLAY_ASM    play()のassemblerを有効化
+ *  BUZZER_BTL  圧電ブザーをBTL接続
+ *  VOL_REVERSE 時間設定ボリュームの極性を逆にする
  */
 
 /* ============================================================
@@ -17,8 +21,7 @@
 /* ============================================================
  *  For Assembler
  * ============================================================ */
-static volatile uint8_t v1, v2, v3;
-static volatile uint8_t v4, v5, v6, v7;
+static volatile uint8_t v1, v2, v3, v4, v5, v6, v7;
 
 /* ============================================================
  *  Variables
@@ -563,8 +566,10 @@ int main(void) {
     // AN0の電圧からタイマーの時間を取得
     // ADC ON
     asm("BSF ADCON0, 0"); // ADON = 1
+    
     // アクイジションタイム(10us)
     __delay_us(10);
+    
     // 変換開始
     asm("BSF ADCON0, 1"); // GO = 1
     // 変換終了wait
