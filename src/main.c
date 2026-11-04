@@ -24,11 +24,6 @@
 static volatile uint8_t v1, v2, v3, v4, v5, v6, v7;
 
 /* ============================================================
- *  Variables
- * ============================================================ */
-static volatile uint8_t timer_minutes = 1U;
-
-/* ============================================================
  *  Song Include
  * ============================================================ */
 //#include "..\song\music_skeleton.c"           // 
@@ -98,12 +93,11 @@ static uint8_t wait_second(uint8_t beep) {
     // v5: beep間隔
     // v7: beep間隔計測
 
-
+    asm("MOVWF _v5");
     v1 = TMR_8MS_LOOP_COUNT - 1;
     v2 = 125U;
     v3 = 1;
     v4 = 0;
-    v5 = beep;
     v7 = 0;
 
     asm("CLRF TMR0");
@@ -188,7 +182,7 @@ static uint8_t wait_second(uint8_t beep) {
 static void wait_button(uint8_t status) {
 
     // statusをv2に待避
-    v2 = status;
+    asm("MOVWF _v2");
 
     v1 = BUTTON_PRESS_DETECTION_TMR;
 
@@ -497,15 +491,19 @@ static void delay(uint8_t loop) {
 
     // 引数 loop は W レジスタに入って渡される（XC8の仕様）
     asm("MOVWF _v1");
+
+    // 100msとなる400usのループ回数を設定(400us * 125 = 100000us = 100ms)
     v3 = 125;
 
+    // 外側ループ
     asm("LOOPSTART:");
-    // uint8_t wait100ms = 25;
+    
+    // _v2にTMR0が400usカウントアップする値を設定(8us * 25 = 400us)
     asm("MOVLW 25");
     asm("MOVWF _v2");
 
+    // 100msループ
     asm("LOOP100MS:");
-    // TMR0 = 0;
     asm("CLRF TMR0");
 
     asm("LOOPTMR0:");

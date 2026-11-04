@@ -154,6 +154,7 @@ extern "C" {
      * ============================================================ */
 
     static volatile uint8_t is_music_stop = 0;
+    static volatile uint8_t timer_minutes = 1U;
 
     /* ============================================================
      *  prototype
