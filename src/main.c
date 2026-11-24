@@ -101,19 +101,6 @@ static uint8_t wait_second(uint8_t beep) {
     v7 = 0;
 
     asm("CLRF TMR0");
-
-#ifdef BUZZER_BTL
-    
-    // BUZZERピン設定
-    // beep != 0 ならBUZZER_PINの状態をLED_PINの逆を設定
-    asm("MOVF _v5, F");
-    asm("BTFSC STATUS, 2");
-    asm("GOTO LOOP_1SEC_BEGIN");    
-    
-    asm("BTFSS GPIO, 2");       // LEDピンの状態判定
-    asm("BSF GPIO, 1");         // LEDがOFFならBUZZERをON
-    
-#endif
     
     // 1secループ先頭
     asm("LOOP_1SEC_BEGIN:");
@@ -169,7 +156,7 @@ static uint8_t wait_second(uint8_t beep) {
     asm("DECFSZ _v2, F");
     asm("GOTO LOOP_1SEC_BEGIN");
 
-    asm("BCF GPIO, 1");
+    asm("CLRF GPIO");
 
     return v3;
 
@@ -230,9 +217,25 @@ static uint8_t timer_main(void) {
     // 秒のループ
     asm("TIMER_SEC_LOOP:");
 
-    // LEDを反転
-    asm("MOVF GPIO, W");
-    asm("XORLW 0x04");
+    // 偶数ならLED ON、奇数ならLED OFF
+    asm("BTFSC _v6, 0");
+    asm("GOTO TIMER_LED_OFF");
+    asm("TIMER_LED_ON:");
+    // LED ON
+#ifdef BUZZER_BTL
+    asm("MOVLW 0x04");
+#else
+    asm("MOVLW 0x04");
+#endif    
+    asm("GOTO TIMER_LED_END");
+    asm("TIMER_LED_OFF:");
+    // LED OFF
+#ifdef BUZZER_BTL
+    asm("MOVLW 0x02");
+#else
+    asm("MOVLW 0x00");
+#endif    
+    asm("TIMER_LED_END:");
     asm("MOVWF GPIO");
 
     // 一秒wait
